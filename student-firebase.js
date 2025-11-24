@@ -329,50 +329,95 @@ async function loadLeaderboard() {
 
 // ------------------ Test flow ------------------
 async function checkTodayTest() {
-    if (!currentUser) return;
-    const day = await getCurrentDay();
-    currentDay = day;
-    if (!day) {
+    try {
+        if (!currentUser) return;
+        const day = await getCurrentDay();
+        currentDay = day;
         const statusEl = document.getElementById('testStatus');
-        if (statusEl) statusEl.innerHTML = '<p style="color:#666;">No active test today.</p>';
-        return;
-    }
-
-    const statusEl = document.getElementById('testStatus');
-    if (statusEl) statusEl.innerHTML = '';
-
-    // Check if already submitted
-    const submittedSnap = await firestore.collection('submissions')
-        .where('studentEmail', '==', currentUser.email)
-        .where('day', '==', day)
-        .limit(1)
-        .get();
-    if (!submittedSnap.empty) {
-        if (statusEl) statusEl.innerHTML = `<p style="color:#28a745;">You already submitted Day ${day}.</p>`;
-        return;
-    }
-
-    // Check active test
-    const activeDoc = await firestore.collection('activeTests').doc(`${currentUser.uid}_day${day}`).get();
-    if (activeDoc.exists) {
-        const data = activeDoc.data();
-        exitCount = data.exitCount || 0;
-        exitLogs = data.exitLogs || [];
         const banner = document.getElementById('resumeTestBanner');
-        if (banner) banner.style.display = 'block';
-        const resumeDay = document.getElementById('resumeDay');
-        if (resumeDay) resumeDay.textContent = day;
-        return;
-    }
+        if (banner) banner.style.display = 'none';
+        const titleEl = document.getElementById('testTitle');
+        if (titleEl && day) titleEl.textContent = `D.PotD Day ${day}`;
 
-    const banner = document.getElementById('resumeTestBanner');
-    if (banner) banner.style.display = 'none';
+        if (!day) {
+            if (statusEl) {
+                statusEl.innerHTML = `
+                    <div style="text-align: center; padding: 40px;">
+                        <h3 style="color: #666; margin-bottom: 15px;">No Test Available Today</h3>
+                        <p style="color: #999;">There is no scheduled test for today. Please check back on a scheduled test day.</p>
+                    </div>
+                `;
+            }
+            return;
+        }
+
+        if (statusEl) statusEl.innerHTML = '<p style="color: #666;">Checking your test status...</p>';
+
+        // Check if already submitted (needs composite index: submissions on studentEmail+day)
+        const submittedSnap = await firestore.collection('submissions')
+            .where('studentEmail', '==', currentUser.email)
+            .where('day', '==', day)
+            .limit(1)
+            .get();
+        if (!submittedSnap.empty) {
+            if (statusEl) {
+                statusEl.innerHTML = `
+                    <div style="text-align: center; padding: 40px;">
+                        <h3 style="color: #28a745; margin-bottom: 15px;">Test Already Submitted</h3>
+                        <p style="color: #666;">You have already completed Day ${day}'s test.</p>
+                        <p style="color: #666; margin-top: 10px;">Check the "Score History" tab to view your results.</p>
+                    </div>
+                `;
+            }
+            return;
+        }
+
+        // Check active test
+        const activeDoc = await firestore.collection('activeTests').doc(`${currentUser.uid}_day${day}`).get();
+        if (activeDoc.exists) {
+            const data = activeDoc.data();
+            exitCount = data.exitCount || 0;
+            exitLogs = data.exitLogs || [];
+            if (banner) banner.style.display = 'block';
+            const resumeDay = document.getElementById('resumeDay');
+            if (resumeDay) resumeDay.textContent = day;
+            if (statusEl) {
+                statusEl.innerHTML = `
+                    <div class="resume-test-banner">
+                        <h3>You Have an Active Test in Progress</h3>
+                        <p>You started Day ${day}'s test but didn't complete it.</p>
+                        <p><strong>Violations recorded: ${exitCount}</strong></p>
+                        <button class="btn" onclick="resumeTest()" style="margin-top: 15px;">Resume Test</button>
+                    </div>
+                `;
+            }
+            return;
+        }
+
+        if (statusEl) {
+            const minutes = Math.floor(TEST_DURATION / 60000);
+            statusEl.innerHTML = `
+                <div style="text-align: center; padding: 40px;">
+                    <h2 style="color: #EA5A2F; margin-bottom: 20px;">Day ${day} Test Available</h2>
+                    <p style="font-size: 18px; color: #666; margin-bottom: 20px;">Ready to take today's test?</p>
+                    <button class="btn" onclick="showConfirmation()" style="padding: 15px 40px; font-size: 18px;">Start Test</button>
+                    <p style="margin-top: 12px; color: #999;">Time limit: ${minutes} minutes</p>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('checkTodayTest failed', error);
+        const statusEl = document.getElementById('testStatus');
+        if (statusEl) statusEl.innerHTML = '<p style="color:#dc3545;">Unable to check today\'s test. Please try again later.</p>';
+    }
 }
 
 async function resumeTest() {
     const doc = await firestore.collection('activeTests').doc(`${currentUser.uid}_day${currentDay}`).get();
     if (!doc.exists) return;
     const data = doc.data();
+    const titleEl = document.getElementById('testTitle');
+    if (titleEl) titleEl.textContent = `D.PotD Day ${currentDay}`;
 
     questionsData = await loadQuestions(currentDay);
     if (!questionsData) return;
@@ -386,6 +431,19 @@ async function resumeTest() {
     enterFullscreenAndStart(data.currentQuestion || 1);
 }
 
+function showConfirmation() {
+    document.getElementById('confirmationModal').classList.add('show');
+}
+
+function cancelTest() {
+    document.getElementById('confirmationModal').classList.remove('show');
+}
+
+function confirmStart() {
+    document.getElementById('confirmationModal').classList.remove('show');
+    startTest();
+}
+
 async function startTest() {
     if (!currentDay) {
         currentDay = await getCurrentDay();
@@ -394,6 +452,9 @@ async function startTest() {
         alert('No active test today.');
         return;
     }
+
+    const titleEl = document.getElementById('testTitle');
+    if (titleEl) titleEl.textContent = `D.PotD Day ${currentDay}`;
 
     showLoading(`Loading Day ${currentDay} questions...`);
     questionsData = await loadQuestions(currentDay);
