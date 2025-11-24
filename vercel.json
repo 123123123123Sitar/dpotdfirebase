@@ -1,7 +1,16 @@
 {
   "rewrites": [
-    { "source": "/", "destination": "/student.html" },
-    { "source": "/student", "destination": "/student.html" },
-    { "source": "/admin", "destination": "/admin.html" }
+    {
+      "source": "/",
+      "destination": "/student-firebase.html"
+    },
+    {
+      "source": "/student",
+      "destination": "/student-firebase.html"
+    },
+    {
+      "source": "/admin",
+      "destination": "/admin-firebase.html"
+    }
   ]
 }
