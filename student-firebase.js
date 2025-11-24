@@ -109,8 +109,8 @@ async function resetPassword() {
 }
 
 async function login() {
-    const email = document.getElementById('email').value.trim();
-    const password = document.getElementById('password').value;
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
     if (!email || !password) {
         showStatus('loginStatus', 'Please enter email and password', 'error');
         return;
@@ -135,16 +135,23 @@ function logout() {
     appAuth.signOut();
     currentUser = null;
     localStorage.removeItem('dpotdUser');
-    document.getElementById('mainPortal').style.display = 'none';
-    document.getElementById('loginForm').classList.remove('hidden');
+    document.getElementById('mainPortal').classList.add('hidden');
+    document.getElementById('authScreen').classList.remove('hidden');
 }
 
 function showMainPortal() {
     if (!currentUser) return;
-    document.getElementById('loginForm').classList.add('hidden');
-    document.getElementById('mainPortal').style.display = 'block';
-    document.getElementById('studentName').textContent = currentUser.name;
-    document.getElementById('studentEmail').textContent = currentUser.email;
+    const authScreen = document.getElementById('authScreen');
+    const mainPortal = document.getElementById('mainPortal');
+    if (!authScreen || !mainPortal) return;
+    document.getElementById('authScreen').classList.add('hidden');
+    document.getElementById('mainPortal').classList.remove('hidden');
+    const nameEl = document.getElementById('profileName');
+    if (nameEl) nameEl.textContent = currentUser.name;
+    const nameInput = document.getElementById('profileNameInput');
+    if (nameInput) nameInput.value = currentUser.name;
+    const emailInput = document.getElementById('profileEmailInput');
+    if (emailInput) emailInput.value = currentUser.email;
     loadUserRank();
     checkTodayTest();
     loadHistory();
@@ -155,14 +162,14 @@ function showMainPortal() {
 async function changePassword() {
     const currentPassword = document.getElementById('currentPassword').value;
     const newPassword = document.getElementById('newPassword').value;
-    const confirmPassword = document.getElementById('confirmPassword').value;
+    const confirmPassword = document.getElementById('confirmNewPassword').value;
 
     if (!currentPassword || !newPassword || !confirmPassword) {
-        showStatus('passwordStatus', 'Please fill in all fields', 'error');
+        showStatus('profileStatus', 'Please fill in all fields', 'error');
         return;
     }
     if (newPassword !== confirmPassword) {
-        showStatus('passwordStatus', 'New passwords do not match', 'error');
+        showStatus('profileStatus', 'New passwords do not match', 'error');
         return;
     }
 
@@ -170,12 +177,12 @@ async function changePassword() {
         const cred = firebase.auth.EmailAuthProvider.credential(currentUser.email, currentPassword);
         await appAuth.currentUser.reauthenticateWithCredential(cred);
         await appAuth.currentUser.updatePassword(newPassword);
-        showStatus('passwordStatus', 'Password updated successfully', 'success');
+        showStatus('profileStatus', 'Password updated successfully', 'success');
         document.getElementById('currentPassword').value = '';
         document.getElementById('newPassword').value = '';
-        document.getElementById('confirmPassword').value = '';
+        document.getElementById('confirmNewPassword').value = '';
     } catch (error) {
-        showStatus('passwordStatus', error.message, 'error');
+        showStatus('profileStatus', error.message, 'error');
     }
 }
 
