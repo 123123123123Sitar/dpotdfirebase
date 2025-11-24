@@ -44,6 +44,45 @@ window.addEventListener('DOMContentLoaded', () => {
         currentUser = JSON.parse(storedUser);
         showMainPortal();
     }
+
+    ['q1Answer', 'q2Answer'].forEach(id => {
+        const input = document.getElementById(id);
+        if (input) {
+            input.addEventListener('input', (e) => {
+                const cleaned = cleanAnswer(e.target.value);
+                if (e.target.value !== cleaned) e.target.value = cleaned;
+            });
+        }
+    });
+
+    const latexInput = document.getElementById('latexInput');
+    if (latexInput) {
+        latexInput.addEventListener('input', updateLatexPreview);
+        latexInput.value = `\\documentclass{article}
+\\usepackage{amsmath}
+
+\\begin{document}
+
+Write your proof here. 
+
+For inline math, use: $x^2 + y^2 = z^2$
+
+For display math, use double dollar signs:
+$
+\\frac{a}{b} = \\frac{c}{d}
+$
+
+Common symbols:
+- Fractions: $\\frac{numerator}{denominator}$
+- Exponents: $x^2$ or $x^{10}$
+- Subscripts: $x_1$ or $x_{10}$
+- Square root: $\\sqrt{x}$ or $\\sqrt[3]{x}$
+- Summation: $\\sum_{i=1}^{n} i$
+- Integral: $\\int_0^1 f(x) dx$
+
+\\end{document}`;
+        updateLatexPreview();
+    }
 });
 
 // ------------------ UI helpers ------------------
@@ -843,6 +882,11 @@ function updateLatexPreview() {
         const input = document.getElementById('latexInput').value;
         const preview = document.getElementById('latexPreview');
 
+        if (!input.trim()) {
+            preview.innerHTML = '<p style="color: #999;">Your formatted proof will appear here...</p>';
+            return;
+        }
+
         let content = input;
         content = content.replace(/\\documentclass\{[^}]+\}/g, '');
         content = content.replace(/\\usepackage\{[^}]+\}/g, '');
@@ -854,13 +898,13 @@ function updateLatexPreview() {
         const docMatch = content.match(/\\begin\{document\}([\s\S]*)\\end\{document\}/);
         if (docMatch) content = docMatch[1].trim();
 
-        preview.innerHTML = content || '<p style="color: #999;">Your formatted proof will appear here...</p>';
+        preview.innerHTML = content || '<p style="color: #999;">Write your proof...</p>';
 
         if (window.MathJax && window.MathJax.typesetPromise) {
             MathJax.typesetClear([preview]);
             MathJax.typesetPromise([preview]).catch((err) => {
                 console.error('MathJax error:', err);
-                preview.innerHTML += '<p style="color: #dc3545; font-size: 12px; margin-top: 10px;"><strong>⚠️ LaTeX Error:</strong> Check your syntax</p>';
+                preview.innerHTML += '<p style="color: #dc3545; font-size: 12px; margin-top: 10px;"><strong>LaTeX Error:</strong> Check your syntax</p>';
             });
         }
     }, 500);
@@ -922,45 +966,6 @@ function addAIMessage(message, type) {
     msg.textContent = message;
     container.appendChild(msg);
     container.scrollTop = container.scrollHeight;
-}
-
-// Keyboard / context guards
-['q1Answer', 'q2Answer'].forEach(id => {
-    const input = document.getElementById(id);
-    if (input) {
-        input.addEventListener('input', (e) => {
-            const cleaned = cleanAnswer(e.target.value);
-            if (e.target.value !== cleaned) e.target.value = cleaned;
-        });
-    }
-});
-const latexInput = document.getElementById('latexInput');
-if (latexInput) {
-    latexInput.addEventListener('input', updateLatexPreview);
-    latexInput.value = `\\documentclass{article}
-\\usepackage{amsmath}
-
-\\begin{document}
-
-Write your proof here. 
-
-For inline math, use: $x^2 + y^2 = z^2$
-
-For display math, use double dollar signs:
-$
-\\frac{a}{b} = \\frac{c}{d}
-$
-
-Common symbols:
-- Fractions: $\\frac{numerator}{denominator}$
-- Exponents: $x^2$ or $x^{10}$
-- Subscripts: $x_1$ or $x_{10}$
-- Square root: $\\sqrt{x}$ or $\\sqrt[3]{x}$
-- Summation: $\\sum_{i=1}^{n} i$
-- Integral: $\\int_0^1 f(x) dx$
-
-\\end{document}`;
-    updateLatexPreview();
 }
 
 document.addEventListener('keydown', (e) => {
