@@ -7,8 +7,8 @@ const firestore = firebase.firestore();
 
 // API Keys (Gemini helper reused)
 const GEMINI_API_KEY = 'AIzaSyAG0HmsIkxuESxsq0sYNPRANTfqHdIk6Tk';
-// Direct Apps Script webhook for email notifications
-const EMAIL_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbxgsoek9XAApbwKkQp8B5c7D6XUi3G-TkI0f26KaOcVH6GuREJDNIcKyUR8qzxkTfbIXg/exec';
+// Serverless reset endpoint (Vercel) to avoid Firebase default emails
+const RESET_API_URL = '/api/reset';
 
 // State
 let currentUser = null;
@@ -22,19 +22,6 @@ let latexUpdateTimer = null;
 let autoSaveInterval = null;
 let fullscreenChangeHandler, visibilityChangeHandler;
 let domReady = false;
-
-async function notifyEmailService(payload) {
-    if (!EMAIL_WEBAPP_URL) return;
-    try {
-        await fetch(EMAIL_WEBAPP_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-    } catch (e) {
-        console.warn('Email webhook failed', e);
-    }
-}
 
 function formatTimeLeft(ms) {
     const totalSeconds = Math.max(0, Math.floor(ms / 1000));
@@ -154,9 +141,10 @@ async function requestPasswordReset() {
     }
     showLoading('Sending reset link...');
     try {
-        await notifyEmailService({
-            type: 'passwordReset',
-            email
+        await fetch(RESET_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
         });
         hideLoading();
         showStatus('resetStatus', 'If an account exists with that email, a password reset link has been sent. Please check your inbox.', 'success');
@@ -750,15 +738,6 @@ async function submitTest(isForced = false) {
     try {
         await firestore.collection('submissions').add(submission);
         await firestore.collection('activeTests').doc(`${currentUser.uid}_day${currentDay}`).delete();
-        notifyEmailService({
-            type: 'submission',
-            studentEmail: currentUser.email,
-            studentName: currentUser.name,
-            day: currentDay,
-            q1Answer: q1Answer,
-            q2Answer: q2Answer,
-            q3Answer: q3Answer
-        });
 
         hideLoading();
         document.body.classList.remove('locked');

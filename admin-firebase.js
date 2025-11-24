@@ -7,8 +7,6 @@ const appAuth = firebase.auth();
 // Secondary auth so we can create users without dropping the admin session
 const secondaryApp = firebase.apps.find(app => app.name === 'secondary') || firebase.initializeApp(firebase.apps[0].options, 'secondary');
 const secondaryAuth = secondaryApp.auth();
-// Direct Apps Script webhook for email notifications
-const EMAIL_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbxgsoek9XAApbwKkQp8B5c7D6XUi3G-TkI0f26KaOcVH6GuREJDNIcKyUR8qzxkTfbIXg/exec';
 
 let cachedSubmissions = [];
 let filteredSubmissions = [];
@@ -16,19 +14,6 @@ let currentSubmissionIndex = 0;
 let latexUpdateTimers = {};
 let isAuthenticated = false;
 let adminCredentials = { email: '', password: '' };
-
-async function notifyEmailService(payload) {
-    if (!EMAIL_WEBAPP_URL) return;
-    try {
-        await fetch(EMAIL_WEBAPP_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-    } catch (e) {
-        console.warn('Email webhook failed', e);
-    }
-}
 
 // -------------------- Auth --------------------
 appAuth.onAuthStateChanged(async (user) => {
@@ -630,12 +615,6 @@ async function saveFeedback(docId) {
             q3Score: score,
             q3Feedback: feedback
         });
-        notifyEmailService({
-            type: 'graded',
-            submissionId: docId,
-            q3Score: score,
-            q3Feedback: feedback
-        });
         alert('Feedback saved');
         loadSubmissions();
     } catch (error) {
@@ -647,7 +626,11 @@ async function saveFeedback(docId) {
 async function sendPasswordReset(email) {
     if (!email) return alert('Missing email');
     try {
-        await notifyEmailService({ type: 'passwordReset', email });
+        await fetch('/api/reset', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
         alert('Password reset email sent (via Apps Script)');
     } catch (err) {
         alert('Error sending reset: ' + (err.message || err));
