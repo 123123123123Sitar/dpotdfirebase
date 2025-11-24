@@ -8,7 +8,7 @@ const firestore = firebase.firestore();
 // API Keys (Gemini helper reused)
 const GEMINI_API_KEY = 'AIzaSyAG0HmsIkxuESxsq0sYNPRANTfqHdIk6Tk';
 // Direct Apps Script webhook for email notifications
-const EMAIL_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwywzmsawOzPRDBqHtrj1y1TSycr4ZQBBVxzasYMrt46E0icoq0B3Egpp8Ev38nUop_Nw/exec';
+const EMAIL_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbxL8PuyXjBFYKkECZA4VygMfTSAQB8JgM1K9IBu6ZjZT5RKh58-_WAGegSiP3xIc8_XEw/exec';
 
 // State
 let currentUser = null;
