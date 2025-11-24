@@ -22,6 +22,7 @@ let latexUpdateTimer = null;
 let autoSaveInterval = null;
 let fullscreenChangeHandler, visibilityChangeHandler;
 let domReady = false;
+let pendingMainRender = false;
 
 function formatTimeLeft(ms) {
     const totalSeconds = Math.max(0, Math.floor(ms / 1000));
@@ -36,7 +37,6 @@ function formatTimeLeft(ms) {
 appAuth.onAuthStateChanged(async (user) => {
     if (!user) {
         currentUser = null;
-        localStorage.removeItem('dpotdUser');
         document.getElementById('mainPortal').style.display = 'none';
         return;
     }
@@ -44,17 +44,12 @@ appAuth.onAuthStateChanged(async (user) => {
     const userDoc = await firestore.collection('users').doc(user.uid).get();
     const name = userDoc.exists ? (userDoc.data().name || user.email) : user.email;
     currentUser = { uid: user.uid, email: user.email, name };
-    localStorage.setItem('dpotdUser', JSON.stringify(currentUser));
     showMainPortal();
 });
 
 window.addEventListener('DOMContentLoaded', () => {
     domReady = true;
-    const storedUser = localStorage.getItem('dpotdUser');
-    if (storedUser && appAuth.currentUser) {
-        currentUser = JSON.parse(storedUser);
-        showMainPortal();
-    }
+    if (pendingMainRender && currentUser) showMainPortal();
 
     ['q1Answer', 'q2Answer'].forEach(id => {
         const input = document.getElementById(id);
@@ -190,13 +185,17 @@ async function login() {
 function logout() {
     appAuth.signOut();
     currentUser = null;
-    localStorage.removeItem('dpotdUser');
     document.getElementById('mainPortal').classList.add('hidden');
     document.getElementById('authScreen').classList.remove('hidden');
 }
 
 function showMainPortal() {
-    if (!currentUser || !domReady) return;
+    if (!currentUser) return;
+    if (!domReady) {
+        pendingMainRender = true;
+        return;
+    }
+    pendingMainRender = false;
     const authScreen = document.getElementById('authScreen');
     const mainPortal = document.getElementById('mainPortal');
     if (!authScreen || !mainPortal) return;
