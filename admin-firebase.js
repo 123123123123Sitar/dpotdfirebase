@@ -4,6 +4,9 @@
 // Globals from firebase-config.js (firebase initialized there)
 const firestore = firebase.firestore();
 const appAuth = firebase.auth();
+// Secondary auth so we can create users without dropping the admin session
+const secondaryApp = firebase.apps.find(app => app.name === 'secondary') || firebase.initializeApp(firebase.apps[0].options, 'secondary');
+const secondaryAuth = secondaryApp.auth();
 
 let cachedSubmissions = [];
 let filteredSubmissions = [];
@@ -306,8 +309,8 @@ async function addUser() {
     }
 
     try {
-        // Create auth user (this signs in as the new user)
-        const newUser = await appAuth.createUserWithEmailAndPassword(email, tempPassword);
+        // Create the user using secondary auth so the admin stays signed in
+        const newUser = await secondaryAuth.createUserWithEmailAndPassword(email, tempPassword);
         const uid = newUser.user.uid;
         await firestore.collection('users').doc(uid).set({
             name,
@@ -315,16 +318,10 @@ async function addUser() {
             isAdmin: false,
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
-        await appAuth.sendPasswordResetEmail(email);
+        await secondaryAuth.sendPasswordResetEmail(email);
         alert('User created. Password reset email sent.');
     } catch (error) {
         alert('Error creating user: ' + error.message);
-    } finally {
-        // Restore admin session
-        if (adminCredentials.email && adminCredentials.password) {
-        await appAuth.signOut();
-        await appAuth.signInWithEmailAndPassword(adminCredentials.email, adminCredentials.password);
-        }
     }
     loadUsers();
 }
