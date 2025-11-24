@@ -7,6 +7,8 @@ const firestore = firebase.firestore();
 
 // API Keys (Gemini helper reused)
 const GEMINI_API_KEY = 'AIzaSyAG0HmsIkxuESxsq0sYNPRANTfqHdIk6Tk';
+// Serverless proxy for email notifications (lives at /api/email on Vercel)
+const EMAIL_PROXY_URL = '/api/email';
 
 // State
 let currentUser = null;
@@ -20,6 +22,19 @@ let latexUpdateTimer = null;
 let autoSaveInterval = null;
 let fullscreenChangeHandler, visibilityChangeHandler;
 let domReady = false;
+
+async function notifyEmailService(payload) {
+    if (!EMAIL_PROXY_URL) return;
+    try {
+        await fetch(EMAIL_PROXY_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+    } catch (e) {
+        console.warn('Email webhook failed', e);
+    }
+}
 
 function formatTimeLeft(ms) {
     const totalSeconds = Math.max(0, Math.floor(ms / 1000));
@@ -732,6 +747,15 @@ async function submitTest(isForced = false) {
     try {
         await firestore.collection('submissions').add(submission);
         await firestore.collection('activeTests').doc(`${currentUser.uid}_day${currentDay}`).delete();
+        notifyEmailService({
+            type: 'submission',
+            studentEmail: currentUser.email,
+            studentName: currentUser.name,
+            day: currentDay,
+            q1Answer: q1Answer,
+            q2Answer: q2Answer,
+            q3Answer: q3Answer
+        });
 
         hideLoading();
         document.body.classList.remove('locked');
