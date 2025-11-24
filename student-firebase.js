@@ -19,6 +19,7 @@ let TEST_DURATION = 120 * 60 * 1000;
 let latexUpdateTimer = null;
 let autoSaveInterval = null;
 let fullscreenChangeHandler, visibilityChangeHandler;
+let domReady = false;
 
 // ------------------ Auth lifecycle ------------------
 appAuth.onAuthStateChanged(async (user) => {
@@ -36,7 +37,8 @@ appAuth.onAuthStateChanged(async (user) => {
     showMainPortal();
 });
 
-window.addEventListener('load', () => {
+window.addEventListener('DOMContentLoaded', () => {
+    domReady = true;
     const storedUser = localStorage.getItem('dpotdUser');
     if (storedUser && appAuth.currentUser) {
         currentUser = JSON.parse(storedUser);
@@ -140,7 +142,7 @@ function logout() {
 }
 
 function showMainPortal() {
-    if (!currentUser) return;
+    if (!currentUser || !domReady) return;
     const authScreen = document.getElementById('authScreen');
     const mainPortal = document.getElementById('mainPortal');
     if (!authScreen || !mainPortal) return;
@@ -196,7 +198,11 @@ async function loadSettings() {
         const el = document.getElementById('testDurationDisplay');
         if (el) el.textContent = `${duration} minutes`;
     } catch (e) {
-        console.error('Settings load failed', e);
+        // Fall back to default if rules prevent read
+        TEST_DURATION = 120 * 60 * 1000;
+        const el = document.getElementById('testDurationDisplay');
+        if (el) el.textContent = '120 minutes';
+        console.warn('Settings load failed (using default):', e);
     }
 }
 
@@ -247,14 +253,18 @@ async function loadUserRank() {
 
         const rank = idx + 1;
         const total = leaderboardArray.length;
-        document.getElementById('userRank').textContent = `Rank: ${rank}/${total}`;
-        document.getElementById('profileRank').classList.remove('hidden');
+        const userRank = document.getElementById('userRank');
+        const profileRank = document.getElementById('profileRank');
+        if (userRank) userRank.textContent = `Rank: ${rank}/${total}`;
+        if (profileRank) profileRank.classList.remove('hidden');
     } catch (error) {
         console.error('loadUserRank failed', error);
     }
 }
 
 async function loadLeaderboard() {
+    const container = document.getElementById('leaderboardContainer');
+    if (container) container.innerHTML = '<p style="color: #666; text-align: center;">Loading leaderboard...</p>';
     try {
         const snap = await firestore.collection('submissions').get();
         const scores = {};
@@ -265,31 +275,54 @@ async function loadLeaderboard() {
             const q1 = d.q1Correct ? 5 : 0;
             const q2 = d.q2Correct ? 5 : 0;
             const q3 = parseInt(d.q3Score || 0);
-            if (!scores[email]) scores[email] = { name, email, totalScore: 0, totalTime: 0, completedDays: 0 };
+            if (!scores[email]) scores[email] = { name, email, totalScore: 0, completedDays: 0 };
             scores[email].totalScore += q1 + q2 + q3;
-            scores[email].totalTime += d.totalTime || 0;
             scores[email].completedDays += 1;
         });
         const leaderboardArray = Object.values(scores).sort((a, b) => {
             if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore;
-            return a.totalTime - b.totalTime;
+            return 0;
         }).slice(0, 10);
 
-        const tbody = document.getElementById('leaderboardBody');
-        if (!tbody) return;
-        tbody.innerHTML = '';
-        leaderboardArray.forEach((entry, idx) => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td><span class="rank-badge rank-${idx + 1}">${idx + 1}</span></td>
-                <td>${entry.name || entry.email}</td>
-                <td>${entry.totalScore}</td>
-                <td>${entry.totalTime}</td>
-                <td>${entry.completedDays}</td>
+        if (!container) return;
+        if (leaderboardArray.length === 0) {
+            container.innerHTML = '<p style="text-align: center; color: #666;">No submissions yet.</p>';
+            return;
+        }
+
+        let tableHTML = `
+            <table class="leaderboard-table">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Name</th>
+                        <th>Total Score</th>
+                        <th>Tests Completed</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        leaderboardArray.forEach((entry, index) => {
+            const rank = index + 1;
+            let rankClass = 'rank-other';
+            if (rank === 1) rankClass = 'rank-1';
+            else if (rank === 2) rankClass = 'rank-2';
+            else if (rank === 3) rankClass = 'rank-3';
+            tableHTML += `
+                <tr>
+                    <td><span class="rank-badge ${rankClass}">${rank}</span></td>
+                    <td>${entry.name || entry.email}</td>
+                    <td>${entry.totalScore}</td>
+                    <td>${entry.completedDays}</td>
+                </tr>
             `;
-            tbody.appendChild(row);
         });
+
+        tableHTML += '</tbody></table>';
+        container.innerHTML = tableHTML;
     } catch (error) {
+        if (container) container.innerHTML = '<p style="color:#dc3545; text-align:center;">Leaderboard unavailable (permissions)</p>';
         console.error('loadLeaderboard failed', error);
     }
 }
@@ -300,11 +333,13 @@ async function checkTodayTest() {
     const day = await getCurrentDay();
     currentDay = day;
     if (!day) {
-        document.getElementById('testStatus').innerHTML = '<p style="color:#666;">No active test today.</p>';
+        const statusEl = document.getElementById('testStatus');
+        if (statusEl) statusEl.innerHTML = '<p style="color:#666;">No active test today.</p>';
         return;
     }
 
-    document.getElementById('testStatus').innerHTML = '';
+    const statusEl = document.getElementById('testStatus');
+    if (statusEl) statusEl.innerHTML = '';
 
     // Check if already submitted
     const submittedSnap = await firestore.collection('submissions')
@@ -313,7 +348,7 @@ async function checkTodayTest() {
         .limit(1)
         .get();
     if (!submittedSnap.empty) {
-        document.getElementById('testStatus').innerHTML = `<p style="color:#28a745;">You already submitted Day ${day}.</p>`;
+        if (statusEl) statusEl.innerHTML = `<p style="color:#28a745;">You already submitted Day ${day}.</p>`;
         return;
     }
 
@@ -323,12 +358,15 @@ async function checkTodayTest() {
         const data = activeDoc.data();
         exitCount = data.exitCount || 0;
         exitLogs = data.exitLogs || [];
-        document.getElementById('resumeTestBanner').style.display = 'block';
-        document.getElementById('resumeDay').textContent = day;
+        const banner = document.getElementById('resumeTestBanner');
+        if (banner) banner.style.display = 'block';
+        const resumeDay = document.getElementById('resumeDay');
+        if (resumeDay) resumeDay.textContent = day;
         return;
     }
 
-    document.getElementById('resumeTestBanner').style.display = 'none';
+    const banner = document.getElementById('resumeTestBanner');
+    if (banner) banner.style.display = 'none';
 }
 
 async function resumeTest() {
@@ -765,6 +803,18 @@ function updateLatexPreview() {
             });
         }
     }, 500);
+}
+
+// ------------------ Tabs ------------------
+function switchMainTab(tab) {
+    document.querySelectorAll('#mainPortal .tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('#mainPortal .tab-content').forEach(c => c.classList.remove('active'));
+    if (event && event.target) event.target.classList.add('active');
+    const targetTab = document.getElementById(`${tab}Tab`);
+    if (targetTab) targetTab.classList.add('active');
+    if (tab === 'today') checkTodayTest();
+    if (tab === 'history') loadHistory();
+    if (tab === 'leaderboard') loadLeaderboard();
 }
 
 function toggleAIHelper() {
