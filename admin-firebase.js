@@ -8,7 +8,7 @@ const appAuth = firebase.auth();
 const secondaryApp = firebase.apps.find(app => app.name === 'secondary') || firebase.initializeApp(firebase.apps[0].options, 'secondary');
 const secondaryAuth = secondaryApp.auth();
 // Direct Apps Script webhook for email notifications
-const EMAIL_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwywzmsawOzPRDBqHtrj1y1TSycr4ZQBBVxzasYMrt46E0icoq0B3Egpp8Ev38nUop_Nw/exec';
+const EMAIL_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbxL8PuyXjBFYKkECZA4VygMfTSAQB8JgM1K9IBu6ZjZT5RKh58-_WAGegSiP3xIc8_XEw/exec';
 
 let cachedSubmissions = [];
 let filteredSubmissions = [];
