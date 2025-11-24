@@ -40,6 +40,19 @@ appAuth.onAuthStateChanged(async (user) => {
     }
 
     if (!data || data.isAdmin !== true) {
+        // Fallback: allow the configured admin email from settings/appSettings
+        try {
+            const settingsDoc = await firestore.collection('settings').doc('appSettings').get();
+            const settingsEmail = settingsDoc.exists ? settingsDoc.data().adminEmail : '';
+            if (settingsEmail && settingsEmail.toLowerCase() === (user.email || '').toLowerCase()) {
+                data = { isAdmin: true };
+            }
+        } catch (e) {
+            console.warn('settings fallback failed', e);
+        }
+    }
+
+    if (!data || data.isAdmin !== true) {
         document.getElementById('loginError').textContent = 'Not authorized for admin portal';
         document.getElementById('loginError').style.display = 'block';
         await appAuth.signOut();
