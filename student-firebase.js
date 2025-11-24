@@ -2,7 +2,7 @@
 // Largely preserves the existing student.js behavior but swaps data calls to Firestore
 
 // Firebase globals
-const auth = firebase.auth();
+const appAuth = firebase.auth();
 const firestore = firebase.firestore();
 
 // API Keys (Gemini helper reused)
@@ -20,21 +20,8 @@ let latexUpdateTimer = null;
 let autoSaveInterval = null;
 let fullscreenChangeHandler, visibilityChangeHandler;
 
-// MathJax config (kept for compatibility)
-window.MathJax = {
-    tex: {
-        inlineMath: [['$', '$'], ['\\(', '\\)']],
-        displayMath: [['$$', '$$'], ['\\[', '\\]']],
-        processEscapes: true,
-        processEnvironments: true
-    },
-    options: {
-        skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']
-    }
-};
-
 // ------------------ Auth lifecycle ------------------
-auth.onAuthStateChanged(async (user) => {
+appAuth.onAuthStateChanged(async (user) => {
     if (!user) {
         currentUser = null;
         localStorage.removeItem('dpotdUser');
@@ -51,7 +38,7 @@ auth.onAuthStateChanged(async (user) => {
 
 window.addEventListener('load', () => {
     const storedUser = localStorage.getItem('dpotdUser');
-    if (storedUser && auth.currentUser) {
+    if (storedUser && appAuth.currentUser) {
         currentUser = JSON.parse(storedUser);
         showMainPortal();
     }
@@ -102,7 +89,7 @@ async function requestPasswordReset() {
     }
     showLoading('Sending reset link...');
     try {
-        await auth.sendPasswordResetEmail(email);
+        await appAuth.sendPasswordResetEmail(email);
         hideLoading();
         showStatus('resetStatus', 'If an account exists with that email, a password reset link has been sent. Please check your inbox.', 'success');
         document.getElementById('resetEmail').value = '';
@@ -131,7 +118,7 @@ async function login() {
 
     showLoading('Signing in...');
     try {
-        const cred = await auth.signInWithEmailAndPassword(email, password);
+        const cred = await appAuth.signInWithEmailAndPassword(email, password);
         const userDoc = await firestore.collection('users').doc(cred.user.uid).get();
         const name = userDoc.exists ? (userDoc.data().name || email) : email;
         currentUser = { uid: cred.user.uid, email, name };
@@ -145,7 +132,7 @@ async function login() {
 }
 
 function logout() {
-    auth.signOut();
+    appAuth.signOut();
     currentUser = null;
     localStorage.removeItem('dpotdUser');
     document.getElementById('mainPortal').style.display = 'none';
@@ -181,8 +168,8 @@ async function changePassword() {
 
     try {
         const cred = firebase.auth.EmailAuthProvider.credential(currentUser.email, currentPassword);
-        await auth.currentUser.reauthenticateWithCredential(cred);
-        await auth.currentUser.updatePassword(newPassword);
+        await appAuth.currentUser.reauthenticateWithCredential(cred);
+        await appAuth.currentUser.updatePassword(newPassword);
         showStatus('passwordStatus', 'Password updated successfully', 'success');
         document.getElementById('currentPassword').value = '';
         document.getElementById('newPassword').value = '';
