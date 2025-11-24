@@ -21,6 +21,15 @@ let autoSaveInterval = null;
 let fullscreenChangeHandler, visibilityChangeHandler;
 let domReady = false;
 
+function formatTimeLeft(ms) {
+    const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    if (hours > 0) return `${hours}h ${minutes}m`;
+    return `${minutes}m ${String(seconds).padStart(2, '0')}s`;
+}
+
 // ------------------ Auth lifecycle ------------------
 appAuth.onAuthStateChanged(async (user) => {
     if (!user) {
@@ -417,15 +426,23 @@ async function checkTodayTest() {
             const data = activeDoc.data();
             exitCount = data.exitCount || 0;
             exitLogs = data.exitLogs || [];
-            if (banner) banner.style.display = 'block';
+            if (banner) banner.style.display = 'none';
             const resumeDay = document.getElementById('resumeDay');
             if (resumeDay) resumeDay.textContent = day;
+
+            let endMs = data.endTime && data.endTime.toMillis ? data.endTime.toMillis() : null;
+            const startMs = data.startTime && data.startTime.toMillis ? data.startTime.toMillis() : null;
+            if (!endMs && startMs) endMs = startMs + TEST_DURATION;
+            if (!endMs) endMs = Date.now() + TEST_DURATION;
+            const timeLeft = formatTimeLeft(endMs - Date.now());
+
             if (statusEl) {
                 statusEl.innerHTML = `
                     <div class="resume-test-banner">
                         <h3>You Have an Active Test in Progress</h3>
                         <p>You started Day ${day}'s test but didn't complete it.</p>
                         <p><strong>Violations recorded: ${exitCount}</strong></p>
+                        <p><strong>Time remaining: ${timeLeft}</strong></p>
                         <button class="btn" onclick="resumeTest()" style="margin-top: 15px;">Resume Test</button>
                     </div>
                 `;
