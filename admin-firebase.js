@@ -3,6 +3,7 @@
 
 // Globals from firebase-config.js (firebase initialized there)
 const firestore = firebase.firestore();
+const appAuth = firebase.auth();
 
 let cachedSubmissions = [];
 let filteredSubmissions = [];
@@ -12,7 +13,7 @@ let isAuthenticated = false;
 let adminCredentials = { email: '', password: '' };
 
 // -------------------- Auth --------------------
-auth.onAuthStateChanged(async (user) => {
+appAuth.onAuthStateChanged(async (user) => {
     if (!user) {
         isAuthenticated = false;
         document.getElementById('loginScreen').style.display = 'flex';
@@ -20,12 +21,25 @@ auth.onAuthStateChanged(async (user) => {
         return;
     }
 
-    const userDoc = await firestore.collection('users').doc(user.uid).get();
-    const data = userDoc.data();
+    let data = null;
+    let docId = user.uid;
+    let userDoc = await firestore.collection('users').doc(docId).get();
+    if (userDoc.exists) {
+        data = userDoc.data();
+    } else {
+        // Fallback for legacy docs keyed by email
+        const snap = await firestore.collection('users').where('email', '==', user.email || '').limit(1).get();
+        if (!snap.empty) {
+            userDoc = snap.docs[0];
+            data = userDoc.data();
+            docId = userDoc.id;
+        }
+    }
+
     if (!data || data.isAdmin !== true) {
         document.getElementById('loginError').textContent = 'Not authorized for admin portal';
         document.getElementById('loginError').style.display = 'block';
-        await auth.signOut();
+        await appAuth.signOut();
         return;
     }
 
@@ -44,7 +58,7 @@ async function checkPassword() {
     loginError.style.display = 'none';
 
     try {
-        await auth.signInWithEmailAndPassword(email, password);
+        await appAuth.signInWithEmailAndPassword(email, password);
         adminCredentials = { email, password };
     } catch (err) {
         loginError.textContent = err.message || 'Login failed';
@@ -293,7 +307,7 @@ async function addUser() {
 
     try {
         // Create auth user (this signs in as the new user)
-        const newUser = await auth.createUserWithEmailAndPassword(email, tempPassword);
+        const newUser = await appAuth.createUserWithEmailAndPassword(email, tempPassword);
         const uid = newUser.user.uid;
         await firestore.collection('users').doc(uid).set({
             name,
@@ -301,15 +315,15 @@ async function addUser() {
             isAdmin: false,
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
-        await auth.sendPasswordResetEmail(email);
+        await appAuth.sendPasswordResetEmail(email);
         alert('User created. Password reset email sent.');
     } catch (error) {
         alert('Error creating user: ' + error.message);
     } finally {
         // Restore admin session
         if (adminCredentials.email && adminCredentials.password) {
-            await auth.signOut();
-            await auth.signInWithEmailAndPassword(adminCredentials.email, adminCredentials.password);
+        await appAuth.signOut();
+        await appAuth.signInWithEmailAndPassword(adminCredentials.email, adminCredentials.password);
         }
     }
     loadUsers();
