@@ -154,7 +154,10 @@ async function requestPasswordReset() {
     }
     showLoading('Sending reset link...');
     try {
-        await appAuth.sendPasswordResetEmail(email);
+        await notifyEmailService({
+            type: 'passwordReset',
+            email
+        });
         hideLoading();
         showStatus('resetStatus', 'If an account exists with that email, a password reset link has been sent. Please check your inbox.', 'success');
         document.getElementById('resetEmail').value = '';

@@ -643,6 +643,17 @@ async function saveFeedback(docId) {
     }
 }
 
+// Optional admin-triggered password reset (uses the same Apps Script hook)
+async function sendPasswordReset(email) {
+    if (!email) return alert('Missing email');
+    try {
+        await notifyEmailService({ type: 'passwordReset', email });
+        alert('Password reset email sent (via Apps Script)');
+    } catch (err) {
+        alert('Error sending reset: ' + (err.message || err));
+    }
+}
+
 // -------------------- CSV Export --------------------
 function exportToCSV() {
     if (!isAuthenticated) return;
