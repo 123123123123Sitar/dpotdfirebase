@@ -409,7 +409,12 @@ async function checkTodayTest() {
             return;
         }
 
-        if (statusEl) statusEl.innerHTML = '<p style="color: #666;">Checking your test status...</p>';
+    if (statusEl) statusEl.innerHTML = '<p style="color: #666;">Checking your test status...</p>';
+    setTimeout(() => {
+        if (statusEl && !statusEl.innerHTML) {
+            statusEl.innerHTML = '<p style="color: #666;">Checking your test status...</p>';
+        }
+    }, 300);
 
         // Check if already submitted (needs composite index: submissions on studentEmail+day)
         const submittedSnap = await firestore.collection('submissions')
@@ -488,6 +493,7 @@ async function resumeTest() {
     questionsData = await loadQuestions(currentDay);
     if (!questionsData) return;
 
+    renderQuestions(questionsData);
     document.getElementById('q1Answer').value = data.q1Answer || '';
     document.getElementById('q2Answer').value = data.q2Answer || '';
     document.getElementById('latexInput').value = data.q3Answer || '';
@@ -530,23 +536,7 @@ async function startTest() {
         return;
     }
 
-    document.getElementById('q1Text').textContent = questionsData.q1_text;
-    document.getElementById('q2Text').textContent = questionsData.q2_text;
-    document.getElementById('q3Text').textContent = questionsData.q3_text;
-    if (window.MathJax) setTimeout(() => MathJax.typesetPromise(), 100);
-
-    if (questionsData.q1_image) {
-        document.getElementById('q1Image').src = questionsData.q1_image;
-        document.getElementById('q1Image').style.display = 'block';
-    }
-    if (questionsData.q2_image) {
-        document.getElementById('q2Image').src = questionsData.q2_image;
-        document.getElementById('q2Image').style.display = 'block';
-    }
-    if (questionsData.q3_image) {
-        document.getElementById('q3Image').src = questionsData.q3_image;
-        document.getElementById('q3Image').style.display = 'block';
-    }
+    renderQuestions(questionsData);
 
     startTime = Date.now();
     const endTime = startTime + TEST_DURATION;
@@ -1024,3 +1014,46 @@ window.addEventListener('beforeunload', (e) => {
         return '';
     }
 });
+function renderQuestions(q) {
+    if (!q) return;
+    const q1Text = document.getElementById('q1Text');
+    const q2Text = document.getElementById('q2Text');
+    const q3Text = document.getElementById('q3Text');
+    if (q1Text) q1Text.textContent = q.q1_text || '';
+    if (q2Text) q2Text.textContent = q.q2_text || '';
+    if (q3Text) q3Text.textContent = q.q3_text || '';
+
+    const q1Img = document.getElementById('q1Image');
+    const q2Img = document.getElementById('q2Image');
+    const q3Img = document.getElementById('q3Image');
+    if (q1Img) {
+        if (q.q1_image) {
+            q1Img.src = q.q1_image;
+            q1Img.style.display = 'block';
+        } else {
+            q1Img.style.display = 'none';
+        }
+    }
+    if (q2Img) {
+        if (q.q2_image) {
+            q2Img.src = q.q2_image;
+            q2Img.style.display = 'block';
+        } else {
+            q2Img.style.display = 'none';
+        }
+    }
+    if (q3Img) {
+        if (q.q3_image) {
+            q3Img.src = q.q3_image;
+            q3Img.style.display = 'block';
+        } else {
+            q3Img.style.display = 'none';
+        }
+    }
+
+    if (window.MathJax && window.MathJax.typesetPromise) {
+        setTimeout(() => {
+            MathJax.typesetPromise([q1Text, q2Text, q3Text].filter(Boolean)).catch(() => {});
+        }, 50);
+    }
+}
