@@ -1,9 +1,8 @@
 // Firebase Admin Portal Logic (Firestore + Auth)
 // This replaces the old Google Apps Script calls used in admin.js
 
-// Globals from firebase-config.js
+// Globals from firebase-config.js (firebase initialized there)
 const firestore = firebase.firestore();
-const auth = firebase.auth();
 
 let cachedSubmissions = [];
 let filteredSubmissions = [];
