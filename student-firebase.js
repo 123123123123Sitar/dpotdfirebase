@@ -202,6 +202,8 @@ function showMainPortal() {
     if (nameInput) nameInput.value = currentUser.name;
     const emailInput = document.getElementById('profileEmailInput');
     if (emailInput) emailInput.value = currentUser.email;
+    const profileRank = document.getElementById('profileRank');
+    if (profileRank) profileRank.classList.add('hidden');
     loadUserRank();
     checkTodayTest();
     loadHistory();
@@ -297,7 +299,11 @@ async function loadUserRank() {
         });
 
         const idx = leaderboardArray.findIndex(s => s.email === currentUser.email);
-        if (idx === -1) return;
+        if (idx === -1) {
+            const profileRank = document.getElementById('profileRank');
+            if (profileRank) profileRank.classList.add('hidden');
+            return;
+        }
 
         const rank = idx + 1;
         const total = leaderboardArray.length;
@@ -305,6 +311,10 @@ async function loadUserRank() {
         const profileRank = document.getElementById('profileRank');
         if (userRank) userRank.textContent = `Rank: ${rank}/${total}`;
         if (profileRank) profileRank.classList.remove('hidden');
+        const rankDisplay = document.getElementById('rankDisplay');
+        const rankDetails = document.getElementById('rankDetails');
+        if (rankDisplay) rankDisplay.textContent = `#${rank}`;
+        if (rankDetails) rankDetails.textContent = `out of ${total} students`;
     } catch (error) {
         console.error('loadUserRank failed', error);
     }
