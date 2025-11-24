@@ -7,8 +7,8 @@ const firestore = firebase.firestore();
 
 // API Keys (Gemini helper reused)
 const GEMINI_API_KEY = 'AIzaSyAG0HmsIkxuESxsq0sYNPRANTfqHdIk6Tk';
-// Serverless proxy for email notifications (lives at /api/email on Vercel)
-const EMAIL_PROXY_URL = '/api/email';
+// Direct Apps Script webhook for email notifications
+const EMAIL_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwywzmsawOzPRDBqHtrj1y1TSycr4ZQBBVxzasYMrt46E0icoq0B3Egpp8Ev38nUop_Nw/exec';
 
 // State
 let currentUser = null;
@@ -24,9 +24,9 @@ let fullscreenChangeHandler, visibilityChangeHandler;
 let domReady = false;
 
 async function notifyEmailService(payload) {
-    if (!EMAIL_PROXY_URL) return;
+    if (!EMAIL_WEBAPP_URL) return;
     try {
-        await fetch(EMAIL_PROXY_URL, {
+        await fetch(EMAIL_WEBAPP_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)

@@ -7,8 +7,8 @@ const appAuth = firebase.auth();
 // Secondary auth so we can create users without dropping the admin session
 const secondaryApp = firebase.apps.find(app => app.name === 'secondary') || firebase.initializeApp(firebase.apps[0].options, 'secondary');
 const secondaryAuth = secondaryApp.auth();
-// Serverless proxy for email notifications (lives at /api/email on Vercel)
-const EMAIL_PROXY_URL = '/api/email';
+// Direct Apps Script webhook for email notifications
+const EMAIL_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwywzmsawOzPRDBqHtrj1y1TSycr4ZQBBVxzasYMrt46E0icoq0B3Egpp8Ev38nUop_Nw/exec';
 
 let cachedSubmissions = [];
 let filteredSubmissions = [];
@@ -18,9 +18,9 @@ let isAuthenticated = false;
 let adminCredentials = { email: '', password: '' };
 
 async function notifyEmailService(payload) {
-    if (!EMAIL_PROXY_URL) return;
+    if (!EMAIL_WEBAPP_URL) return;
     try {
-        await fetch(EMAIL_PROXY_URL, {
+        await fetch(EMAIL_WEBAPP_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
