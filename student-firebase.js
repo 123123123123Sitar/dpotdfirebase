@@ -438,6 +438,7 @@ async function loadLeaderboard() {
 async function checkTodayTest() {
     try {
         if (!currentUser) return;
+        if (!statusCacheHTML) setStatusHTML('<p style="color: #666;">Checking your test status...</p>');
         const day = await getCurrentDay();
         currentDay = day;
         const banner = document.getElementById('resumeTestBanner');
@@ -963,12 +964,20 @@ function updateLatexPreview() {
 
 // ------------------ Tabs ------------------
 function switchMainTab(tab) {
+    const evt = typeof event !== 'undefined' ? event : null;
     document.querySelectorAll('#mainPortal .tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('#mainPortal .tab-content').forEach(c => c.classList.remove('active'));
-    if (event && event.target) event.target.classList.add('active');
+    if (evt && evt.target) evt.target.classList.add('active');
     const targetTab = document.getElementById(`${tab}Tab`);
     if (targetTab) targetTab.classList.add('active');
-    if (tab === 'today') checkTodayTest();
+    if (tab === 'today') {
+        if (!statusCacheHTML) {
+            setStatusHTML('<p style="color:#666;">Loading today\'s test...</p>');
+        } else {
+            setStatusHTML(statusCacheHTML);
+        }
+        checkTodayTest();
+    }
     if (tab === 'history') loadHistory();
     if (tab === 'leaderboard') loadLeaderboard();
 }
