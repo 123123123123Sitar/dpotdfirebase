@@ -201,8 +201,15 @@ function showMainPortal() {
     const authScreen = document.getElementById('authScreen');
     const mainPortal = document.getElementById('mainPortal');
     if (!authScreen || !mainPortal) return;
-    document.getElementById('authScreen').classList.add('hidden');
-    document.getElementById('mainPortal').classList.remove('hidden');
+    const authScreen = document.getElementById('authScreen');
+    const mainPortal = document.getElementById('mainPortal');
+    if (authScreen) authScreen.classList.add('hidden');
+    if (mainPortal) {
+        mainPortal.classList.remove('hidden');
+        mainPortal.style.display = 'block';
+    }
+    const statusEl = document.getElementById('testStatus');
+    if (statusEl) statusEl.innerHTML = '<p style="color:#666;">Loading today\'s test...</p>';
     const nameEl = document.getElementById('profileName');
     if (nameEl) nameEl.textContent = currentUser.name;
     const nameInput = document.getElementById('profileNameInput');
@@ -213,6 +220,12 @@ function showMainPortal() {
     if (profileRank) profileRank.classList.add('hidden');
     loadUserRank();
     checkTodayTest();
+    setTimeout(() => {
+        const statusNow = document.getElementById('testStatus');
+        if (statusNow && !statusNow.innerHTML) {
+            checkTodayTest();
+        }
+    }, 400);
     loadHistory();
     loadLeaderboard();
     loadSettings();
