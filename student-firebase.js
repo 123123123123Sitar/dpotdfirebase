@@ -37,7 +37,9 @@ function formatTimeLeft(ms) {
 appAuth.onAuthStateChanged(async (user) => {
     if (!user) {
         currentUser = null;
-        document.getElementById('mainPortal').style.display = 'none';
+        const mainPortal = document.getElementById('mainPortal');
+        if (mainPortal) mainPortal.style.display = 'none';
+        else pendingMainRender = true;
         return;
     }
 
