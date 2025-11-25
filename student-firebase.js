@@ -217,12 +217,6 @@ function showMainPortal() {
     if (profileRank) profileRank.classList.add('hidden');
     loadUserRank();
     checkTodayTest();
-    setTimeout(() => {
-        const statusNow = document.getElementById('testStatus');
-        if (statusNow && !statusNow.innerHTML) {
-            checkTodayTest();
-        }
-    }, 400);
     loadHistory();
     loadLeaderboard();
     loadSettings();
@@ -426,12 +420,7 @@ async function checkTodayTest() {
             return;
         }
 
-    if (statusEl) statusEl.innerHTML = '<p style="color: #666;">Checking your test status...</p>';
-    setTimeout(() => {
-        if (statusEl && !statusEl.innerHTML) {
-            statusEl.innerHTML = '<p style="color: #666;">Checking your test status...</p>';
-        }
-    }, 300);
+        if (statusEl) statusEl.innerHTML = '<p style="color: #666;">Checking your test status...</p>';
 
         // Check if already submitted (needs composite index: submissions on studentEmail+day)
         const submittedSnap = await firestore.collection('submissions')
