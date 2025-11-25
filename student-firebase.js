@@ -224,6 +224,12 @@ function showMainPortal() {
     if (profileRank) profileRank.classList.add('hidden');
     loadUserRank();
     checkTodayTest();
+    setTimeout(() => {
+        const statusNow = document.getElementById('testStatus');
+        if (statusNow && !statusNow.innerHTML.trim()) {
+            checkTodayTest();
+        }
+    }, 800);
     loadHistory();
     loadLeaderboard();
     loadSettings();
@@ -493,6 +499,11 @@ async function checkTodayTest() {
         console.error('checkTodayTest failed', error);
         const statusEl = document.getElementById('testStatus');
         if (statusEl) statusEl.innerHTML = '<p style="color:#dc3545;">Unable to check today\'s test. Please try again later.</p>';
+        return;
+    }
+    const statusEl = document.getElementById('testStatus');
+    if (statusEl && !statusEl.innerHTML.trim()) {
+        statusEl.innerHTML = '<p style="color:#666;">Unable to load today\'s test. Please refresh or try again shortly.</p>';
     }
 }
 
