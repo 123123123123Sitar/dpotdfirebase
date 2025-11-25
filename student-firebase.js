@@ -198,12 +198,9 @@ function showMainPortal() {
         return;
     }
     pendingMainRender = false;
-    const authScreen = document.getElementById('authScreen');
+    const authScreenEl = document.getElementById('authScreen');
     const mainPortal = document.getElementById('mainPortal');
-    if (!authScreen || !mainPortal) return;
-    const authScreen = document.getElementById('authScreen');
-    const mainPortal = document.getElementById('mainPortal');
-    if (authScreen) authScreen.classList.add('hidden');
+    if (authScreenEl) authScreenEl.classList.add('hidden');
     if (mainPortal) {
         mainPortal.classList.remove('hidden');
         mainPortal.style.display = 'block';
