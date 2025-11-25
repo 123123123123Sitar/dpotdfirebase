@@ -37,6 +37,7 @@ function formatTimeLeft(ms) {
 appAuth.onAuthStateChanged(async (user) => {
     if (!user) {
         currentUser = null;
+        localStorage.removeItem('dpotdUser');
         const mainPortal = document.getElementById('mainPortal');
         if (mainPortal) mainPortal.style.display = 'none';
         else pendingMainRender = true;
@@ -46,11 +47,16 @@ appAuth.onAuthStateChanged(async (user) => {
     const userDoc = await firestore.collection('users').doc(user.uid).get();
     const name = userDoc.exists ? (userDoc.data().name || user.email) : user.email;
     currentUser = { uid: user.uid, email: user.email, name };
+    localStorage.setItem('dpotdUser', JSON.stringify(currentUser));
     showMainPortal();
 });
 
 window.addEventListener('DOMContentLoaded', () => {
     domReady = true;
+    const storedUser = localStorage.getItem('dpotdUser');
+    if (storedUser && appAuth.currentUser) {
+        currentUser = JSON.parse(storedUser);
+    }
     if (pendingMainRender && currentUser) showMainPortal();
 
     ['q1Answer', 'q2Answer'].forEach(id => {
@@ -187,6 +193,7 @@ async function login() {
 function logout() {
     appAuth.signOut();
     currentUser = null;
+    localStorage.removeItem('dpotdUser');
     document.getElementById('mainPortal').classList.add('hidden');
     document.getElementById('authScreen').classList.remove('hidden');
 }
