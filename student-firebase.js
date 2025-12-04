@@ -221,11 +221,7 @@ async function requestPasswordReset() {
     }
     showLoading('Sending reset link...');
     try {
-        await fetch(RESET_API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email })
-        });
+        await appAuth.sendPasswordResetEmail(email);
         hideLoading();
         showStatus('resetStatus', 'If an account exists with that email, a password reset link has been sent. Please check your inbox.', 'success');
         document.getElementById('resetEmail').value = '';
@@ -236,12 +232,11 @@ async function requestPasswordReset() {
 }
 
 async function verifyResetToken(token) {
-    // Firebase handles password reset via its own hosted pages; surface a friendly message
-    showStatus('loginStatus', 'Please use the password reset email sent from Firebase.', 'info');
+    showStatus('loginStatus', 'Please use the password reset email we sent to update your password.', 'info');
 }
 
 async function resetPassword() {
-    showStatus('resetPasswordStatus', 'Password reset is handled via the email link from Firebase.', 'info');
+    showStatus('resetPasswordStatus', 'Please use the password reset email we sent to update your password.', 'info');
 }
 
 async function login() {
