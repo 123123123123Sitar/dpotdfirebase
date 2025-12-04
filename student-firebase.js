@@ -223,7 +223,7 @@ async function requestPasswordReset() {
     try {
         await appAuth.sendPasswordResetEmail(email);
         hideLoading();
-        showStatus('resetStatus', 'If an account exists with that email, a password reset link has been sent. Please check your inbox.', 'success');
+        showStatus('resetStatus', 'If an account exists with that email, a “Set new password” email is on the way. Open it and tap the button to choose a new password.', 'success');
         document.getElementById('resetEmail').value = '';
     } catch (error) {
         hideLoading();
@@ -232,11 +232,11 @@ async function requestPasswordReset() {
 }
 
 async function verifyResetToken(token) {
-    showStatus('loginStatus', 'Please use the password reset email we sent to update your password.', 'info');
+    showStatus('loginStatus', 'Please use the “Set new password” email we sent to update your password.', 'info');
 }
 
 async function resetPassword() {
-    showStatus('resetPasswordStatus', 'Please use the password reset email we sent to update your password.', 'info');
+    showStatus('resetPasswordStatus', 'Please use the “Set new password” email we sent to update your password.', 'info');
 }
 
 async function login() {

@@ -493,7 +493,7 @@ async function saveQuestions() {
 
     try {
         await firestore.collection('questions').doc(`day${day}`).set(payload, { merge: true });
-        showStatus('questionStatus', 'Questions saved to Firestore', 'success');
+        showStatus('questionStatus', 'Questions saved.', 'success');
     } catch (error) {
         showStatus('questionStatus', 'Error saving questions: ' + error.message, 'error');
     }
@@ -632,7 +632,7 @@ async function addUser() {
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
         await secondaryAuth.sendPasswordResetEmail(email);
-        alert('User created. Password reset email sent.');
+        alert('User created. A set-password email was sent.');
     } catch (error) {
         alert('Error creating user: ' + error.message);
     }
@@ -640,10 +640,10 @@ async function addUser() {
 }
 
 async function deleteUser(userId) {
-    if (!confirm('Delete this user from Firestore? (Auth deletion must be done in Firebase Console)')) return;
+    if (!confirm('Delete this user record? (Remove the auth account separately in your auth console.)')) return;
     try {
         await firestore.collection('users').doc(userId).delete();
-        alert('User document deleted. Remember to remove the auth user in Firebase Console.');
+        alert('User record deleted. Remember to remove the auth user in your auth console.');
         loadUsers();
     } catch (error) {
         alert('Error deleting user: ' + error.message);
