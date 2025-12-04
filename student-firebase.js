@@ -1168,7 +1168,7 @@ async function sendAIMessage() {
 }
 
 function addAIMessage(message, type) {
-    const container = document.getElementById('aiChat');
+    const container = document.getElementById('aiChatContainer') || document.getElementById('aiChat');
     if (!container) return;
     const msg = document.createElement('div');
     msg.className = 'ai-message ' + type;
@@ -1237,6 +1237,26 @@ function stopAutoSave() {
     }
 }
 
+function formatRichText(raw) {
+    if (!raw) return '';
+    let html = String(raw);
+
+    function buildList(body, tag) {
+        const items = body.split(/\\item/g).map(s => s.trim()).filter(Boolean);
+        if (!items.length) return body;
+        return `<${tag}>${items.map(i => `<li>${i}</li>`).join('')}</${tag}>`;
+    }
+
+    html = html.replace(/\\begin\{itemize\}([\s\S]*?)\\end\{itemize\}/g, (_, body) => buildList(body, 'ul'));
+    html = html.replace(/\\begin\{enumerate\}([\s\S]*?)\\end\{enumerate\}/g, (_, body) => buildList(body, 'ol'));
+    html = html.replace(/(^|[^$])\\textbf\{([^}]*)\}/g, '$1<strong>$2</strong>');
+    html = html.replace(/(^|[^$])\\textit\{([^}]*)\}/g, '$1<em>$2</em>');
+    html = html.replace(/(^|[^$])\\underline\{([^}]*)\}/g, '$1<u>$2</u>');
+    html = html.replace(/\\vspace\{([^}]+)\}/g, (_, val) => `<div style="height:${val};"></div>`);
+    html = html.replace(/\n{2,}/g, '<br><br>');
+    return html;
+}
+
 // Ensure renderQuestions displays instructions and includes instructions in MathJax typeset
 function renderQuestions(q) {
     if (!q) return;
@@ -1244,12 +1264,11 @@ function renderQuestions(q) {
     const q2Text = document.getElementById('q2Text');
     const q3Text = document.getElementById('q3Text');
     const instructionsContent = document.getElementById('instructionsContent');
-    // Allow admins to write question text/instructions in LaTeX/HTML; render via innerHTML
-    if (instructionsContent) instructionsContent.innerHTML = q.instructions || '';
 
-    if (q1Text) q1Text.innerHTML = q.q1_text || '';
-    if (q2Text) q2Text.innerHTML = q.q2_text || '';
-    if (q3Text) q3Text.innerHTML = q.q3_text || '';
+    if (instructionsContent) instructionsContent.innerHTML = formatRichText(q.instructions || '');
+    if (q1Text) q1Text.innerHTML = formatRichText(q.q1_text || '');
+    if (q2Text) q2Text.innerHTML = formatRichText(q.q2_text || '');
+    if (q3Text) q3Text.innerHTML = formatRichText(q.q3_text || '');
 
     const q1Img = document.getElementById('q1Image');
     const q2Img = document.getElementById('q2Image');

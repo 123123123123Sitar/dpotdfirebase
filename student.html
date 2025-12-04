@@ -515,14 +515,27 @@
         .ai-input-container {
             padding: 15px;
             border-top: 2px solid #E3E3E3;
+            display: flex;
+            gap: 10px;
+            align-items: center;
         }
 
         .ai-input-container input {
-            width: 100%;
+            flex: 1;
             padding: 10px;
             border: 2px solid #E3E3E3;
             border-radius: 6px;
             font-size: 14px;
+        }
+
+        .ai-input-container button {
+            background: #EA5A2F;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 10px 16px;
+            font-weight: 600;
+            cursor: pointer;
         }
 
         .ai-toggle-btn {
@@ -1079,6 +1092,7 @@
         </div>
         <div class="ai-input-container">
             <input type="text" id="aiInput" placeholder="Ask about LaTeX syntax..." onkeypress="handleAIEnter(event)">
+            <button type="button" onclick="sendAIMessage()">Send</button>
         </div>
     </div>
 
