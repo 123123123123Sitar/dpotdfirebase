@@ -502,3 +502,38 @@ body.locked::after {
     gap: 10px;
     margin-bottom: 20px;
 }
+
+.leaderboard-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+}
+
+.sortable {
+    cursor: pointer;
+    user-select: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.sortable-active {
+    cursor: pointer;
+    user-select: none;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* subtle hover for headers */
+.leaderboard-table thead th:hover .sortable,
+.leaderboard-table thead th:hover .sortable-active {
+    opacity: 0.9;
+}
+
+/* ensure table container scroll looks nice */
+.leaderboard-table {
+    border-collapse: collapse;
+    width: 100%;
+}

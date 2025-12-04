@@ -29,7 +29,7 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background: #f5f5f5; min-height: 100vh; }
-        #loginScreen { display: flex; align-items: center; justify-content: center; min-height: 100vh; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); z-index: 9999; }
+        #loginScreen { display: flex; align-items: center; justify-content: center; min-height: 100vh; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #e3e3e3; z-index: 9999; }
         .login-box { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); max-width: 400px; width: 90%; }
         .login-box h1 { color: #333; margin-bottom: 10px; font-size: 28px; text-align: center; }
         .login-box p { color: #666; margin-bottom: 30px; text-align: center; }
@@ -38,7 +38,8 @@
         .login-form-group input { width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 16px; transition: border-color 0.3s; box-sizing: border-box; }
         .login-form-group input:focus { outline: none; border-color: #667eea; }
         .login-error { display: none; background: #fee; color: #c33; padding: 10px; border-radius: 6px; margin-bottom: 20px; font-size: 14px; text-align: center; }
-        .login-btn { width: 100%; padding: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: 600; cursor: pointer; transition: transform 0.2s; }
+        .login-btn { width: 100%; padding: 12px; background: #EA5A2F; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: 600; cursor: pointer; transition: transform 0.2s; }
+        .btn-secondary { width: auto; padding: 12px; background: #EA5A2F; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: 600; cursor: pointer; transition: transform 0.2s; }
         .login-btn:hover { transform: translateY(-2px); }
         #adminPanel { display: none; }
         .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
@@ -126,12 +127,21 @@
             <p class="subtitle">Manage Questions, Schedule, Users & View Submissions</p>
             
             <div class="tabs">
-                <button class="tab active" onclick="switchTab('questions')">Questions</button>
-                <button class="tab" onclick="switchTab('schedule')">Schedule</button>
-                <button class="tab" onclick="switchTab('settings')">Settings</button>
-                <button class="tab" onclick="switchTab('users')">Users</button>
-                <button class="tab" onclick="switchTab('submissions')">Submissions</button>
+                <button class="tab active" data-tab="questions" onclick="switchTab('questions')">Questions</button>
+                <button class="tab" data-tab="schedule" onclick="switchTab('schedule')">Schedule</button>
+                <button class="tab" data-tab="settings" onclick="switchTab('settings')">Settings</button>
+                <button class="tab" data-tab="users" onclick="switchTab('users')">Users</button>
+                <button class="tab" data-tab="submissions" onclick="switchTab('submissions')">Submissions</button>
+                <button class="tab" data-tab="leaderboard" onclick="switchTab('leaderboard')">Leaderboard</button>
             </div>
+            
+            <div id="leaderboard" class="tab-content">
+                <div class="btn-group" style="align-items:center; gap:12px;">
+                    <button class="btn" onclick="loadLeaderboard()">Refresh Leaderboard</button>
+                </div>
+                <div id="leaderboardContainer" style="min-height: 200px;"><p style="color:#666; text-align:center;">No data loaded.</p></div>
+                <div id="leaderboardStatus" class="status"></div>
+             </div>
             
             <div id="questions" class="tab-content active">
                 <div class="form-group">
@@ -143,6 +153,11 @@
                         <option value="4">Day 4</option>
                         <option value="5">Day 5</option>
                     </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Instructions (displayed before Q1):</label>
+                    <textarea id="instructions" rows="4" placeholder="Write the day's instructions here (supports basic HTML/LaTeX for previewing in student view)"></textarea>
                 </div>
                 
                 <div class="question-group">
@@ -264,10 +279,6 @@
                         <label>Email:</label>
                         <input type="email" id="newUserEmail" placeholder="student@example.com">
                     </div>
-                    <div class="form-group">
-                        <label>Temporary Password:</label>
-                        <input type="text" id="newUserPassword" placeholder="Enter temporary password">
-                    </div>
                     <button class="btn" onclick="addUser()" style="margin-top: 15px;">Add User</button>
                 </div>
                 
@@ -324,5 +335,84 @@
     
     <script src="firebase-config.js"></script>
     <script src="admin-firebase.js"></script>
+
+    <script>
+    // Hide current admin's own account from the users list
+    (function () {
+        let adminEmail = null;
+        const containerSelector = '#usersContainer';
+
+        function setAdminEmail(user) {
+            adminEmail = user && user.email ? user.email.toLowerCase() : null;
+            runFilter();
+        }
+
+        // Determine whether an element corresponds to the admin account
+        function elementMatchesAdmin(el) {
+            if (!adminEmail) return false;
+            // 1) data-email on the element
+            const attr = el.dataset && el.dataset.email ? el.dataset.email.toLowerCase() : null;
+            if (attr === adminEmail) return true;
+            // 2) descendant with data-email
+            const descendant = el.querySelector && el.querySelector('[data-email]');
+            if (descendant && descendant.dataset && descendant.dataset.email && descendant.dataset.email.toLowerCase() === adminEmail) return true;
+            // 3) fallback: check textual email presence
+            if (el.textContent && el.textContent.toLowerCase().includes(adminEmail)) return true;
+            return false;
+        }
+
+        // Hide matching children in the container
+        function runFilter() {
+            const container = document.querySelector(containerSelector);
+            if (!container || !adminEmail) return;
+            Array.from(container.children).forEach(child => {
+                try {
+                    if (elementMatchesAdmin(child)) child.style.display = 'none';
+                } catch (e) {
+                    // ignore individual errors
+                }
+            });
+        }
+
+        // Observe additions to the container and hide newly-added admin entries
+        function observeContainer() {
+            const container = document.querySelector(containerSelector);
+            if (!container) return;
+            const mo = new MutationObserver(mutations => {
+                mutations.forEach(m => {
+                    (m.addedNodes || []).forEach(node => {
+                        if (node.nodeType === 1) {
+                            try {
+                                if (elementMatchesAdmin(node)) node.style.display = 'none';
+                            } catch (e) {}
+                        }
+                    });
+                });
+            });
+            mo.observe(container, { childList: true });
+            // initial pass (delayed slightly to allow admin-firebase to render)
+            setTimeout(runFilter, 300);
+        }
+
+        // Wire up Firebase auth state (or wait for firebase to be available)
+        function initAuthObserver() {
+            if (window.firebase && firebase.auth) {
+                firebase.auth().onAuthStateChanged(setAdminEmail);
+            } else {
+                window.addEventListener('load', () => {
+                    if (window.firebase && firebase.auth) firebase.auth().onAuthStateChanged(setAdminEmail);
+                });
+            }
+        }
+
+        function init() {
+            initAuthObserver();
+            observeContainer();
+        }
+
+        if (document.readyState === 'complete' || document.readyState === 'interactive') init();
+        else document.addEventListener('DOMContentLoaded', init);
+    })();
+    </script>
 </body>
 </html>

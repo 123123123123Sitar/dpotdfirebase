@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>D.PotD Student Portal</title>
-    <script>
+    <script> 
         window.MathJax = {
             tex: {
                 inlineMath: [['$', '$'], ['\(', '\)']],
@@ -1220,12 +1220,23 @@
 
             <div id="navigationBar" style="display: none; background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
                 <div style="display: flex; gap: 10px; justify-content: center; align-items: center; flex-wrap: wrap;">
+                    <button class="question-nav-btn" onclick="showQuestion(0)" id="navBtn0" style="padding: 10px 20px; border: 2px solid #E3E3E3; background: white; border-radius: 6px; cursor: pointer; font-weight: 600;">I</button>
                     <button class="question-nav-btn" onclick="showQuestion(1)" id="navBtn1" style="padding: 10px 20px; border: 2px solid #E3E3E3; background: white; border-radius: 6px; cursor: pointer; font-weight: 600;">1</button>
                     <button class="question-nav-btn" onclick="showQuestion(2)" id="navBtn2" style="padding: 10px 20px; border: 2px solid #E3E3E3; background: white; border-radius: 6px; cursor: pointer; font-weight: 600;">2</button>
                     <button class="question-nav-btn" onclick="showQuestion(3)" id="navBtn3" style="padding: 10px 20px; border: 2px solid #E3E3E3; background: white; border-radius: 6px; cursor: pointer; font-weight: 600;">3</button>
                     <div style="width: 2px; height: 30px; background: #E3E3E3; margin: 0 10px;"></div>
                     <button class="btn" onclick="nextQuestion()" id="nextBtn" style="width: auto; padding: 10px 30px; margin: 0;">Next</button>
                     <button class="btn" onclick="submitTest()" id="submitBtn" style="width: auto; padding: 10px 30px; margin: 0; background: #28a745;">Submit Test</button>
+                </div>
+            </div>
+
+            <div id="instructionsPage" style="display: none;">
+                <div class="question-box">
+                    <h2>Instructions</h2>
+                    <div id="instructionsContent" style="color:#333; font-size:1.05em; line-height:1.6;"></div>
+                    <div style="text-align:center; margin-top:20px;">
+                        <button class="btn" onclick="nextQuestion()" style="max-width:300px;">Proceed to Question 1</button>
+                    </div>
                 </div>
             </div>
 
@@ -1275,7 +1286,9 @@
     <div class="sponsor-footer">
         <span class="sponsor-label">Proudly Sponsored By</span>
         <div class="sponsor-logos">
-            <img src="https://aimforsevausa.org/wp-content/uploads/2018/09/Copy-of-AoPS-Logo.jpg" alt="Art of Problem Solving" class="sponsor-logo">
+            <a href="https://artofproblemsolving.com" target="_blank" rel="noopener noreferrer">
+                <img src="https://aimforsevausa.org/wp-content/uploads/2018/09/Copy-of-AoPS-Logo.jpg" alt="Art of Problem Solving" class="sponsor-logo">
+            </a>
         </div>
     </div>
 </body>

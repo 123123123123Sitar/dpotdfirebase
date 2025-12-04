@@ -5,6 +5,31 @@
 const appAuth = firebase.auth();
 const firestore = firebase.firestore();
 
+// Cache admin emails to filter out admin accounts from student views
+async function getAdminEmails() {
+    if (window._dpotd_adminEmails) return window._dpotd_adminEmails;
+    const set = new Set();
+    try {
+        const snap = await firestore.collection('users').where('isAdmin', '==', true).get();
+        snap.forEach(doc => {
+            const e = doc.data().email;
+            if (e) set.add(e.toLowerCase());
+        });
+        window._dpotd_adminEmails = set;
+    } catch (e) {
+        console.warn('getAdminEmails failed', e);
+    }
+    try {
+        const settingsDoc = await firestore.collection('settings').doc('appSettings').get();
+        if (settingsDoc.exists) {
+            const adminEmail = settingsDoc.data().adminEmail;
+            if (adminEmail) set.add(adminEmail.toLowerCase());
+        }
+    } catch (e) {
+        // ignore
+    }
+    return set;
+}
 // API Keys (Gemini helper reused)
 const GEMINI_API_KEY = 'AIzaSyAG0HmsIkxuESxsq0sYNPRANTfqHdIk6Tk';
 // Serverless reset endpoint (Vercel) to avoid Firebase default emails
@@ -62,8 +87,34 @@ appAuth.onAuthStateChanged(async (user) => {
         return;
     }
 
-    const userDoc = await firestore.collection('users').doc(user.uid).get();
-    const name = userDoc.exists ? (userDoc.data().name || user.email) : user.email;
+    // Determine if this account is an admin; if so, redirect to admin page
+    let isAdmin = false;
+    let name = user.email;
+    try {
+        const userDoc = await firestore.collection('users').doc(user.uid).get();
+        if (userDoc.exists) {
+            const d = userDoc.data();
+            isAdmin = !!d.isAdmin;
+            name = d.name || user.email;
+        } else {
+            // fallback: legacy docs keyed by email
+            const snap = await firestore.collection('users').where('email', '==', user.email || '').limit(1).get();
+            if (!snap.empty) {
+                const d = snap.docs[0].data();
+                isAdmin = !!d.isAdmin;
+                name = d.name || user.email;
+            }
+        }
+    } catch (e) {
+        console.warn('Auth lookup failed', e);
+    }
+
+    if (isAdmin) {
+        // Redirect admin users to the admin UI instead of using the student portal
+        window.location.href = '/admin.html';
+        return;
+    }
+
     currentUser = { uid: user.uid, email: user.email, name };
     localStorage.setItem('dpotdUser', JSON.stringify(currentUser));
     showMainPortal();
@@ -204,8 +255,35 @@ async function login() {
     showLoading('Signing in...');
     try {
         const cred = await appAuth.signInWithEmailAndPassword(email, password);
-        const userDoc = await firestore.collection('users').doc(cred.user.uid).get();
-        const name = userDoc.exists ? (userDoc.data().name || email) : email;
+
+        // After sign-in, verify this account is not an admin
+        let isAdmin = false;
+        let name = email;
+        try {
+            const userDoc = await firestore.collection('users').doc(cred.user.uid).get();
+            if (userDoc.exists) {
+                const d = userDoc.data();
+                isAdmin = !!d.isAdmin;
+                name = d.name || email;
+            } else {
+                const snap = await firestore.collection('users').where('email', '==', email).limit(1).get();
+                if (!snap.empty) {
+                    const d = snap.docs[0].data();
+                    isAdmin = !!d.isAdmin;
+                    name = d.name || email;
+                }
+            }
+        } catch (e) {
+            console.warn('Post-login lookup failed', e);
+        }
+
+        if (isAdmin) {
+            // Redirect admin users to the admin UI instead of keeping them on the student portal
+            hideLoading();
+            window.location.href = '.html';
+            return;
+        }
+
         currentUser = { uid: cred.user.uid, email, name };
         localStorage.setItem('dpotdUser', JSON.stringify(currentUser));
         hideLoading();
@@ -328,11 +406,13 @@ async function getCurrentDay() {
 async function loadUserRank() {
     if (!currentUser) return;
     try {
+        const adminEmails = await getAdminEmails();
         const snap = await firestore.collection('submissions').get();
         const scores = {};
         snap.forEach(doc => {
             const d = doc.data();
-            const email = d.studentEmail;
+            const email = (d.studentEmail || '').toLowerCase();
+            if (adminEmails && adminEmails.has(email)) return; // skip admin submissions
             const q1 = d.q1Correct ? 5 : 0;
             const q2 = d.q2Correct ? 5 : 0;
             const q3 = parseInt(d.q3Score || 0);
@@ -373,11 +453,13 @@ async function loadLeaderboard() {
     const container = document.getElementById('leaderboardContainer');
     if (container) container.innerHTML = '<p style="color: #666; text-align: center;">Loading leaderboard...</p>';
     try {
+        const adminEmails = await getAdminEmails();
         const snap = await firestore.collection('submissions').get();
         const scores = {};
         snap.forEach(doc => {
             const d = doc.data();
-            const email = d.studentEmail;
+            const email = (d.studentEmail || '').toLowerCase();
+            if (adminEmails && adminEmails.has(email)) return; // skip admin submissions
             const name = d.studentName;
             const q1 = d.q1Correct ? 5 : 0;
             const q2 = d.q2Correct ? 5 : 0;
@@ -535,7 +617,7 @@ async function resumeTest() {
     exitCount = data.exitCount || 0;
     exitLogs = data.exitLogs || [];
     startTime = data.startTime ? data.startTime.toMillis() : Date.now();
-    enterFullscreenAndStart(data.currentQuestion || 1);
+    enterFullscreenAndStart((typeof data.currentQuestion === 'number') ? data.currentQuestion : 0);
 }
 
 function showConfirmation() {
@@ -582,7 +664,7 @@ async function startTest() {
         day: currentDay,
         startTime: firebase.firestore.Timestamp.fromDate(new Date(startTime)),
         endTime: firebase.firestore.Timestamp.fromDate(new Date(endTime)),
-        currentQuestion: 1,
+        currentQuestion: 0,
         q1Answer: '',
         q2Answer: '',
         q3Answer: '',
@@ -592,7 +674,7 @@ async function startTest() {
     });
 
     hideLoading();
-    await enterFullscreenAndStart(1);
+    await enterFullscreenAndStart(0);
 }
 
 async function loadQuestions(day) {
@@ -601,6 +683,7 @@ async function loadQuestions(day) {
         if (!doc.exists) return null;
         const d = doc.data();
         return {
+            instructions: d.instructions || '',
             q1_text: d.q1Text || '',
             q1_answer: String(d.q1Answer || ''),
             q1_image: d.q1Image || '',
@@ -618,83 +701,111 @@ async function loadQuestions(day) {
 }
 
 async function enterFullscreenAndStart(questionNum) {
-    document.getElementById('mainPortal').style.display = 'none';
-    document.getElementById('questionSection').style.display = 'block';
-    document.getElementById('navigationBar').style.display = 'block';
+    const mainPortalEl = document.getElementById('mainPortal');
+    const questionSectionEl = document.getElementById('questionSection');
+    const navigationBarEl = document.getElementById('navigationBar');
+    if (mainPortalEl) mainPortalEl.style.display = 'none';
+    if (questionSectionEl) questionSectionEl.style.display = 'block';
+    if (navigationBarEl) navigationBarEl.style.display = 'block';
     const profileRank = document.getElementById('profileRank');
     if (profileRank) profileRank.classList.add('hidden');
     document.body.classList.add('locked');
     testActive = true;
     monitorFullscreen();
-    q1StartTime = Date.now();
+    // timing will be set when each question is shown
     timerInterval = setInterval(updateTimer, 1000);
     updateTimer();
     startAutoSave();
     showQuestion(questionNum);
 
     try {
-        await document.documentElement.requestFullscreen();
+        if (document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen();
     } catch (err) {
         console.error('Fullscreen error:', err);
     }
 }
 
-function startAutoSave() {
-    autoSaveInterval = setInterval(async () => {
-        if (!testActive) return;
-        try {
-            await firestore.collection('activeTests').doc(`${currentUser.uid}_day${currentDay}`).set({
-                userId: currentUser.uid,
-                email: currentUser.email,
-                day: currentDay,
-                currentQuestion,
-                q1Answer: document.getElementById('q1Answer').value,
-                q2Answer: document.getElementById('q2Answer').value,
-                q3Answer: document.getElementById('latexInput').value,
-                exitCount,
-                exitLogs,
-                status: 'active'
-            }, { merge: true });
-        } catch (error) {
-            console.error('Auto-save failed:', error);
-        }
-    }, 30000);
-}
-
 function showQuestion(num) {
-    ['q1Page', 'q2Page', 'q3Page'].forEach(id => document.getElementById(id).style.display = 'none');
-    document.getElementById(`q${num}Page`).style.display = 'block';
-    document.getElementById('progressIndicator').textContent = `Day ${currentDay} - Question ${num} of 3`;
-    document.getElementById('progressIndicator').style.display = 'block';
-    ['navBtn1', 'navBtn2', 'navBtn3'].forEach(id => {
+    // pages: 0 = instructions, 1..3 = questions
+    ['instructionsPage', 'q1Page', 'q2Page', 'q3Page'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+    });
+    if (num === 0) {
+        const inst = document.getElementById('instructionsPage');
+        if (inst) inst.style.display = 'block';
+        const pi = document.getElementById('progressIndicator');
+        if (pi) pi.textContent = `Day ${currentDay} - Instructions`;
+    } else {
+        const qp = document.getElementById(`q${num}Page`);
+        if (qp) qp.style.display = 'block';
+        const pi = document.getElementById('progressIndicator');
+        if (pi) pi.textContent = `Day ${currentDay} - Question ${num} of 3`;
+    }
+
+    const pi = document.getElementById('progressIndicator');
+    if (pi) pi.style.display = 'block';
+
+    ['navBtn0','navBtn1', 'navBtn2', 'navBtn3'].forEach(id => {
         const btn = document.getElementById(id);
+        if (!btn) return;
         btn.style.background = 'white';
         btn.style.borderColor = '#E3E3E3';
         btn.style.color = '#000';
     });
     const activeBtn = document.getElementById(`navBtn${num}`);
-    activeBtn.style.background = '#EA5A2F';
-    activeBtn.style.borderColor = '#EA5A2F';
-    activeBtn.style.color = 'white';
+    if (activeBtn) {
+        activeBtn.style.background = '#EA5A2F';
+        activeBtn.style.borderColor = '#EA5A2F';
+        activeBtn.style.color = 'white';
+    }
+
     const nextBtn = document.getElementById('nextBtn');
     const submitBtn = document.getElementById('submitBtn');
-    if (num === 3) {
-        nextBtn.style.display = 'none';
-        submitBtn.style.display = 'block';
-    } else {
-        nextBtn.style.display = 'block';
-        submitBtn.style.display = 'none';
+    if (nextBtn && submitBtn) {
+        if (num === 3) {
+            nextBtn.style.display = 'none';
+            submitBtn.style.display = 'block';
+        } else {
+            nextBtn.style.display = 'block';
+            submitBtn.style.display = 'none';
+        }
     }
+
     const aiBtn = document.getElementById('aiToggleBtn');
     const helpBtn = document.getElementById('latexHelpBtn');
-    if (num === 3) {
-        aiBtn.style.display = 'block';
-        helpBtn.style.display = 'flex';
-    } else {
-        aiBtn.style.display = 'none';
-        helpBtn.style.display = 'none';
+    if (aiBtn && helpBtn) {
+        if (num === 3) {
+            aiBtn.style.display = 'block';
+            helpBtn.style.display = 'flex';
+        } else {
+            aiBtn.style.display = 'none';
+            helpBtn.style.display = 'none';
+        }
     }
+
+    // record end-time for previous question when moving forward, and start time for shown question
+    const prev = currentQuestion;
+    if (prev === 1) q1EndTime = Date.now();
+    if (prev === 2) q2EndTime = Date.now();
+    if (prev === 3) q3EndTime = Date.now();
+
+    if (num === 1 && !q1StartTime) q1StartTime = Date.now();
+    if (num === 2 && !q2StartTime) q2StartTime = Date.now();
+    if (num === 3) q3StartTime = Date.now();
+
     currentQuestion = num;
+
+    // Save currentQuestion to activeTests so resume works
+    if (testActive && currentUser && currentDay !== null) {
+        try {
+            firestore.collection('activeTests').doc(`${currentUser.uid}_day${currentDay}`).set({
+                currentQuestion
+            }, { merge: true });
+        } catch (e) {
+            console.warn('Could not update currentQuestion:', e);
+        }
+    }
 }
 
 function nextQuestion() {
@@ -709,9 +820,11 @@ function updateTimer() {
     const minutes = Math.floor((remaining % 3600000) / 60000);
     const seconds = Math.floor((remaining % 60000) / 1000);
     const timer = document.getElementById('timer');
-    timer.textContent = `Time Remaining: ${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-    timer.style.display = 'block';
-    timer.style.color = remaining < 600000 ? '#ff6b6b' : '#000';
+    if (timer) {
+        timer.textContent = `Time Remaining: ${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        timer.style.display = 'block';
+        timer.style.color = remaining < 600000 ? '#ff6b6b' : '#000';
+    }
     if (remaining <= 0) {
         clearInterval(timerInterval);
         submitTest(true);
@@ -720,9 +833,9 @@ function updateTimer() {
 
 async function submitTest(isForced = false) {
     if (!testActive && !isForced) return;
-    const q1Answer = cleanAnswer(document.getElementById('q1Answer').value.trim());
-    const q2Answer = cleanAnswer(document.getElementById('q2Answer').value.trim());
-    const q3Answer = document.getElementById('latexInput').value.trim();
+    const q1Answer = (document.getElementById('q1Answer') && cleanAnswer(document.getElementById('q1Answer').value.trim())) || '';
+    const q2Answer = (document.getElementById('q2Answer') && cleanAnswer(document.getElementById('q2Answer').value.trim())) || '';
+    const q3Answer = (document.getElementById('latexInput') && document.getElementById('latexInput').value.trim()) || '';
     if (!isForced && (!q1Answer || !q2Answer || !q3Answer)) {
         alert('Please answer all questions before submitting.');
         return;
@@ -737,7 +850,7 @@ async function submitTest(isForced = false) {
 
     const endTime = Date.now();
     q3EndTime = endTime;
-    const q1Time = q1EndTime ? Math.floor((q1EndTime - q1StartTime) / 1000) : 0;
+    const q1Time = q1EndTime && q1StartTime ? Math.floor((q1EndTime - q1StartTime) / 1000) : 0;
     const q2Time = q2EndTime && q2StartTime ? Math.floor((q2EndTime - q2StartTime) / 1000) : 0;
     const q3Time = q3StartTime ? Math.floor((q3EndTime - q3StartTime) / 1000) : 0;
     const totalTime = Math.floor((endTime - startTime) / 1000);
@@ -772,14 +885,21 @@ async function submitTest(isForced = false) {
         document.body.classList.remove('locked');
         if (document.exitFullscreen) document.exitFullscreen();
 
-        document.getElementById('aiHelper').classList.remove('show');
-        document.getElementById('aiToggleBtn').style.display = 'none';
-        document.getElementById('latexHelpBtn').style.display = 'none';
-        document.getElementById('timer').style.display = 'none';
-        document.getElementById('progressIndicator').style.display = 'none';
+        const aiHelperEl = document.getElementById('aiHelper');
+        if (aiHelperEl) aiHelperEl.classList.remove('show');
+        const aiToggleBtn = document.getElementById('aiToggleBtn');
+        if (aiToggleBtn) aiToggleBtn.style.display = 'none';
+        const latexHelpBtn = document.getElementById('latexHelpBtn');
+        if (latexHelpBtn) latexHelpBtn.style.display = 'none';
+        const timerEl = document.getElementById('timer');
+        if (timerEl) timerEl.style.display = 'none';
+        const prog = document.getElementById('progressIndicator');
+        if (prog) prog.style.display = 'none';
 
-        document.getElementById('questionSection').style.display = 'none';
-        document.getElementById('mainPortal').style.display = 'block';
+        const questionSection = document.getElementById('questionSection');
+        if (questionSection) questionSection.style.display = 'none';
+        const mainPortalEl = document.getElementById('mainPortal');
+        if (mainPortalEl) mainPortalEl.style.display = 'block';
         const profileRank = document.getElementById('profileRank');
         if (profileRank) profileRank.classList.remove('hidden');
 
@@ -787,27 +907,30 @@ async function submitTest(isForced = false) {
         const q1Points = q1Correct ? 5 : 0;
         const q2Points = q2Correct ? 5 : 0;
         const currentTotal = q1Points + q2Points;
-        document.getElementById('testStatus').innerHTML = `
-            <div style="text-align: center; padding: 40px;">
-                <h2 style="color: #28a745; margin-bottom: 20px;">Test Submitted Successfully!</h2>
-                <p style="font-size: 18px; color: #666; margin-bottom: 30px;">Your responses have been recorded and will be graded shortly.</p>
-                <div style="background: #f8f9fa; padding: 30px; border-radius: 8px; max-width: 500px; margin: 0 auto;">
-                    <div style="background: #EA5A2F; color: white; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                        <strong style="font-size: 20px;">Current Score: ${currentTotal}/20</strong>
-                        <p style="margin-top: 5px; font-size: 14px;">Q3 will be graded manually</p>
-                    </div>
-                    <div style="margin-bottom: 15px; text-align: left;">
-                        <strong>Q1 (5 points):</strong> <span class="${q1Correct ? 'correct' : 'incorrect'}">${q1Correct ? 'Correct (+5 pts)' : 'Incorrect (0 pts)'}</span>
-                    </div>
-                    <div style="margin-bottom: 15px; text-align: left;">
-                        <strong>Q2 (5 points):</strong> <span class="${q2Correct ? 'correct' : 'incorrect'}">${q2Correct ? 'Correct (+5 pts)' : 'Incorrect (0 pts)'}</span>
-                    </div>
-                    <div style="text-align: left;">
-                        <strong>Q3 (10 points):</strong> Will be graded manually
+        const testStatusEl = document.getElementById('testStatus');
+        if (testStatusEl) {
+            testStatusEl.innerHTML = `
+                <div style="text-align: center; padding: 40px;">
+                    <h2 style="color: #28a745; margin-bottom: 20px;">Test Submitted Successfully!</h2>
+                    <p style="font-size: 18px; color: #666; margin-bottom: 30px;">Your responses have been recorded and will be graded shortly.</p>
+                    <div style="background: #f8f9fa; padding: 30px; border-radius: 8px; max-width: 500px; margin: 0 auto;">
+                        <div style="background: #EA5A2F; color: white; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                            <strong style="font-size: 20px;">Current Score: ${currentTotal}/20</strong>
+                            <p style="margin-top: 5px; font-size: 14px;">Q3 will be graded manually</p>
+                        </div>
+                        <div style="margin-bottom: 15px; text-align: left;">
+                            <strong>Q1 (5 points):</strong> <span class="${q1Correct ? 'correct' : 'incorrect'}">${q1Correct ? 'Correct (+5 pts)' : 'Incorrect (0 pts)'}</span>
+                        </div>
+                        <div style="margin-bottom: 15px; text-align: left;">
+                            <strong>Q2 (5 points):</strong> <span class="${q2Correct ? 'correct' : 'incorrect'}">${q2Correct ? 'Correct (+5 pts)' : 'Incorrect (0 pts)'}</span>
+                        </div>
+                        <div style="text-align: left;">
+                            <strong>Q3 (10 points):</strong> Will be graded manually
+                        </div>
                     </div>
                 </div>
-            </div>
-        `;
+            `;
+        }
     } catch (error) {
         hideLoading();
         alert('Error submitting test: ' + error.message + '\n\nPlease contact your administrator.');
@@ -819,16 +942,35 @@ function recordViolation(type) {
     if (!testActive) return;
     exitCount++;
     exitLogs.push({ time: new Date().toISOString(), type });
-    document.getElementById('violationCount').textContent = exitCount;
-    document.getElementById('warningOverlay').classList.add('show');
+    const vc = document.getElementById('violationCount');
+    if (vc) vc.textContent = exitCount;
+    const warning = document.getElementById('warningOverlay');
+    if (warning) warning.classList.add('show');
+
+    // persist to activeTests
+    if (currentUser && currentDay !== null) {
+        try {
+            firestore.collection('activeTests').doc(`${currentUser.uid}_day${currentDay}`).set({
+                exitCount,
+                exitLogs
+            }, { merge: true });
+        } catch (e) {
+            console.warn('Could not persist violation:', e);
+        }
+    }
 }
 
 function hideWarning() {
-    document.getElementById('warningOverlay').classList.remove('show');
+    const warning = document.getElementById('warningOverlay');
+    if (warning) warning.classList.remove('show');
 }
 
 function returnToFullscreen() {
-    document.documentElement.requestFullscreen().then(() => hideWarning()).catch(() => alert('Please allow fullscreen'));
+    if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().then(() => hideWarning()).catch(() => alert('Please allow fullscreen'));
+    } else {
+        alert('Fullscreen not supported in this browser');
+    }
 }
 
 function monitorFullscreen() {
@@ -848,7 +990,7 @@ function monitorFullscreen() {
 async function loadHistory() {
     if (!currentUser) return;
     const container = document.getElementById('historyContainer');
-    container.innerHTML = '<p style="color:#666;">Loading history...</p>';
+    if (container) container.innerHTML = '<p style="color:#666;">Loading history...</p>';
 
     try {
         const snap = await firestore.collection('submissions')
@@ -878,6 +1020,7 @@ async function loadHistory() {
             };
         });
 
+        if (!container) return;
         if (subs.length === 0) {
             container.innerHTML = '<p style="color:#666; text-align:center;">No submissions yet.</p>';
             return;
@@ -923,7 +1066,7 @@ async function loadHistory() {
             container.appendChild(card);
         });
     } catch (error) {
-        container.innerHTML = '<p style="color: #dc3545;">Error loading history</p>';
+        if (container) container.innerHTML = '<p style="color: #dc3545;">Error loading history</p>';
     }
 }
 
@@ -931,8 +1074,10 @@ async function loadHistory() {
 function updateLatexPreview() {
     if (latexUpdateTimer) clearTimeout(latexUpdateTimer);
     latexUpdateTimer = setTimeout(() => {
-        const input = document.getElementById('latexInput').value;
+        const inputEl = document.getElementById('latexInput');
         const preview = document.getElementById('latexPreview');
+        const input = inputEl ? inputEl.value : '';
+        if (!preview) return;
 
         if (!input.trim()) {
             preview.innerHTML = '<p style="color: #999;">Your formatted proof will appear here...</p>';
@@ -983,15 +1128,18 @@ function switchMainTab(tab) {
 }
 
 function toggleAIHelper() {
-    document.getElementById('aiHelper').classList.toggle('show');
+    const ai = document.getElementById('aiHelper');
+    if (ai) ai.classList.toggle('show');
 }
 
 function showLatexHelp() {
-    document.getElementById('latexHelpDropdown').classList.add('show');
+    const d = document.getElementById('latexHelpDropdown');
+    if (d) d.classList.add('show');
 }
 
 function hideLatexHelp() {
-    document.getElementById('latexHelpDropdown').classList.remove('show');
+    const d = document.getElementById('latexHelpDropdown');
+    if (d) d.classList.remove('show');
 }
 
 function handleAIEnter(event) {
@@ -1000,10 +1148,10 @@ function handleAIEnter(event) {
 
 async function sendAIMessage() {
     const input = document.getElementById('aiInput');
-    const message = input.value.trim();
+    const message = input ? input.value.trim() : '';
     if (!message) return;
     addAIMessage(message, 'user');
-    input.value = '';
+    if (input) input.value = '';
 
     try {
         const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=' + GEMINI_API_KEY, {
@@ -1021,6 +1169,7 @@ async function sendAIMessage() {
 
 function addAIMessage(message, type) {
     const container = document.getElementById('aiChat');
+    if (!container) return;
     const msg = document.createElement('div');
     msg.className = 'ai-message ' + type;
     msg.textContent = message;
@@ -1057,14 +1206,50 @@ window.addEventListener('beforeunload', (e) => {
         return '';
     }
 });
+// Start periodic autosave of current answers into activeTests
+function startAutoSave() {
+    // clear any prior interval
+    if (autoSaveInterval) clearInterval(autoSaveInterval);
+    autoSaveInterval = setInterval(async () => {
+        if (!testActive || !currentUser || currentDay === null) return;
+        try {
+            const payload = {
+                q1Answer: (document.getElementById('q1Answer') && document.getElementById('q1Answer').value) || '',
+                q2Answer: (document.getElementById('q2Answer') && document.getElementById('q2Answer').value) || '',
+                q3Answer: (document.getElementById('latexInput') && document.getElementById('latexInput').value) || '',
+                currentQuestion: typeof currentQuestion === 'number' ? currentQuestion : 0,
+                exitCount: exitCount || 0,
+                exitLogs: exitLogs || []
+            };
+            await firestore.collection('activeTests').doc(`${currentUser.uid}_day${currentDay}`).set(payload, { merge: true });
+        } catch (e) {
+            // don't spam console, but note occasionally
+            console.warn('autosave failed', e);
+        }
+    }, 5000); // every 5s
+}
+
+// Stop autosave when test ends
+function stopAutoSave() {
+    if (autoSaveInterval) {
+        clearInterval(autoSaveInterval);
+        autoSaveInterval = null;
+    }
+}
+
+// Ensure renderQuestions displays instructions and includes instructions in MathJax typeset
 function renderQuestions(q) {
     if (!q) return;
     const q1Text = document.getElementById('q1Text');
     const q2Text = document.getElementById('q2Text');
     const q3Text = document.getElementById('q3Text');
-    if (q1Text) q1Text.textContent = q.q1_text || '';
-    if (q2Text) q2Text.textContent = q.q2_text || '';
-    if (q3Text) q3Text.textContent = q.q3_text || '';
+    const instructionsContent = document.getElementById('instructionsContent');
+    // Allow admins to write question text/instructions in LaTeX/HTML; render via innerHTML
+    if (instructionsContent) instructionsContent.innerHTML = q.instructions || '';
+
+    if (q1Text) q1Text.innerHTML = q.q1_text || '';
+    if (q2Text) q2Text.innerHTML = q.q2_text || '';
+    if (q3Text) q3Text.innerHTML = q.q3_text || '';
 
     const q1Img = document.getElementById('q1Image');
     const q2Img = document.getElementById('q2Image');
@@ -1096,7 +1281,8 @@ function renderQuestions(q) {
 
     if (window.MathJax && window.MathJax.typesetPromise) {
         setTimeout(() => {
-            MathJax.typesetPromise([q1Text, q2Text, q3Text].filter(Boolean)).catch(() => {});
+            const toTypeset = [instructionsContent, q1Text, q2Text, q3Text].filter(Boolean);
+            if (toTypeset.length) MathJax.typesetPromise(toTypeset).catch(() => {});
         }, 50);
     }
 }
