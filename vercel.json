@@ -2,15 +2,15 @@
   "rewrites": [
     {
       "source": "/",
-      "destination": "/student-firebase.html"
+      "destination": "/student.html"
     },
     {
       "source": "/student",
-      "destination": "/student-firebase.html"
+      "destination": "/student.html"
     },
     {
       "source": "/admin",
-      "destination": "/admin-firebase.html"
+      "destination": "/admin.html"
     }
   ]
 }
