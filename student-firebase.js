@@ -32,12 +32,28 @@ async function getAdminEmails() {
 }
 // API Keys (Gemini helper reused)
 const GEMINI_API_KEY = 'AIzaSyBsszHZdjBZCfOeo_IscCD3HBHhnaRqhWs';
-// Try modern Gemini endpoints first; fall back to older model if needed (v1beta is the public API surface)
+// Try modern Gemini endpoints first; fall back to older models if needed
 const GEMINI_ENDPOINTS = [
-    { version: 'v1beta', model: 'gemini-1.5-flash-latest' },
-    { version: 'v1beta', model: 'gemini-1.5-pro-latest' },
-    { version: 'v1beta', model: 'gemini-1.0-pro-latest' },
-    { version: 'v1beta', model: 'gemini-pro' }
+    // 2.5 generation
+    { version: 'v1beta', model: 'gemini-2.5-flash' },
+    { version: 'v1beta', model: 'gemini-2.5-pro' },
+    { version: 'v1beta', model: 'gemini-2.5-flash-lite' },
+    // 2.0 generation
+    { version: 'v1beta', model: 'gemini-2.0-flash' },
+    // 1.x generation
+    { version: 'v1beta', model: 'gemini-1.5-flash' },
+    { version: 'v1beta', model: 'gemini-1.5-pro' },
+    { version: 'v1beta', model: 'gemini-1.0-pro' },
+    { version: 'v1beta', model: 'gemini-pro' },
+    // Mirror the same list on v1 endpoints (some keys surface models there)
+    { version: 'v1', model: 'gemini-2.5-flash' },
+    { version: 'v1', model: 'gemini-2.5-pro' },
+    { version: 'v1', model: 'gemini-2.5-flash-lite' },
+    { version: 'v1', model: 'gemini-2.0-flash' },
+    { version: 'v1', model: 'gemini-1.5-flash' },
+    { version: 'v1', model: 'gemini-1.5-pro' },
+    { version: 'v1', model: 'gemini-1.0-pro' },
+    { version: 'v1', model: 'gemini-pro' }
 ];
 // Serverless reset endpoint (Vercel) to avoid Firebase default emails
 const RESET_API_URL = '/api/reset';
