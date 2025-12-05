@@ -73,6 +73,7 @@ let domReady = false;
 let pendingMainRender = false;
 let statusCacheHTML = '';
 let statusKeepaliveInterval = null;
+let geminiWorkingEndpoint = null; // cache the first working Gemini endpoint to avoid slow retries
 
 function setStatusHTML(html) {
     statusCacheHTML = html || '';
@@ -1175,17 +1176,32 @@ async function sendAIMessage() {
     addAIMessage(message, 'user');
     if (input) input.value = '';
 
+    // Show a placeholder while waiting for the API
+    const pendingMsg = addAIMessage('Thinking...', 'assistant');
+
     try {
         const reply = await callGeminiAPI(message);
-        addAIMessage(reply, 'assistant');
+        if (pendingMsg) pendingMsg.innerHTML = renderAIMessageHTML(reply);
+        else addAIMessage(reply, 'assistant');
     } catch (error) {
-        addAIMessage('Error contacting AI helper: ' + error.message, 'assistant');
+        const errorText = 'Error contacting AI helper: ' + error.message;
+        if (pendingMsg) pendingMsg.innerHTML = renderAIMessageHTML(errorText);
+        else addAIMessage(errorText, 'assistant');
     }
 }
 
 async function callGeminiAPI(message) {
     const errors = [];
-    for (const cfg of GEMINI_ENDPOINTS) {
+    const tried = new Set();
+    const list = geminiWorkingEndpoint
+        ? [geminiWorkingEndpoint, ...GEMINI_ENDPOINTS.filter(e => e !== geminiWorkingEndpoint)]
+        : GEMINI_ENDPOINTS;
+
+    for (const cfg of list) {
+        const key = `${cfg.version}/${cfg.model}`;
+        if (tried.has(key)) continue;
+        tried.add(key);
+
         const url = `https://generativelanguage.googleapis.com/${cfg.version}/models/${cfg.model}:generateContent?key=${GEMINI_API_KEY}`;
         try {
             const response = await fetch(url, {
@@ -1203,6 +1219,7 @@ async function callGeminiAPI(message) {
             }
             const reply = data.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('').trim();
             if (!reply) throw new Error(`${cfg.model} returned an empty response.`);
+            geminiWorkingEndpoint = cfg;
             return reply;
         } catch (err) {
             errors.push(`${cfg.version}/${cfg.model}: ${err.message}`);
@@ -1220,6 +1237,7 @@ function addAIMessage(message, type) {
     msg.innerHTML = renderAIMessageHTML(message);
     container.appendChild(msg);
     container.scrollTop = container.scrollHeight;
+    return msg;
 }
 
 function renderAIMessageHTML(text) {
@@ -1233,14 +1251,12 @@ function renderAIMessageHTML(text) {
 
     // Handle fenced code blocks ```lang ... ```
     escaped = escaped.replace(/```(?:[a-zA-Z0-9_-]+)?\s*([\s\S]*?)```/g, (_m, code) => {
-        return `<pre><code>${code.trim()}</code></pre>`;
+        const cleaned = code.replace(/^\n+|\n+$/g, '');
+        return `<pre><code>${cleaned}</code></pre>`;
     });
 
     // Handle inline code `...`
     escaped = escaped.replace(/`([^`]+)`/g, (_m, code) => `<code>${code}</code>`);
-
-    // Convert remaining newlines to <br> for readability
-    escaped = escaped.replace(/\n/g, '<br>');
 
     return escaped;
 }
