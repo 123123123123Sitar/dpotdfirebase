@@ -870,21 +870,28 @@ function displayCurrentSubmission() {
                 <p><strong>${sub.q2_correct ? 'Correct (+5)' : 'Incorrect (0)'}</strong> • Time: ${formatTime(sub.q2_time || 0)}</p>
             </div>
             <div class="question-group">
-                <h3>Q3 Answer (LaTeX)</h3>
+                <div class="q3-header">
+                    <h3>Q3 Answer (LaTeX)</h3>
+                    <div class="q3-meta">
+                        <span class="feedback-time">Time: ${formatTime(sub.q3_time || 0)}</span>
+                    </div>
+                </div>
                 <div class="latex-editor-container">
                     <div class="latex-input-section">
                         <h4>Score (0-10)</h4>
                         <input type="number" id="score_${rowKey}" min="0" max="10" step="1" value="${sub.q3_score || ''}" style="margin-bottom: 10px;">
                         <h4>Feedback (LaTeX)</h4>
                         <textarea id="feedback_latex_${rowKey}" oninput="updateLatexPreview('${rowKey}')" placeholder="Write LaTeX feedback...">${sub.q3_feedback || ''}</textarea>
-                        <button class="btn" style="margin-top: 10px;" onclick="saveFeedback('${rowKey}')">Save Feedback &amp; Notify</button>
                     </div>
                     <div class="latex-preview-section">
                         <h4>Preview</h4>
                         <div id="feedback_preview_${rowKey}" class="preview-content">${sub.q3_feedback || '<p style="color:#999;">Preview will render here</p>'}</div>
                     </div>
                 </div>
-                <p style="margin-top: 10px; color: #666;">Time: ${formatTime(sub.q3_time || 0)}</p>
+                <div class="feedback-actions">
+                    <button class="btn" onclick="saveFeedback('${rowKey}')">Save Feedback &amp; Notify</button>
+                    <span class="feedback-time">Score currently: ${sub.q3_score === '' || sub.q3_score === null || sub.q3_score === undefined ? 'Not set' : sub.q3_score + '/10'}</span>
+                </div>
             </div>
             <div class="question-group">
                 <h3>Exit Logs</h3>
