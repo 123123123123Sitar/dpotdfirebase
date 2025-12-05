@@ -1217,9 +1217,32 @@ function addAIMessage(message, type) {
     if (!container) return;
     const msg = document.createElement('div');
     msg.className = 'ai-message ' + type;
-    msg.textContent = message;
+    msg.innerHTML = renderAIMessageHTML(message);
     container.appendChild(msg);
     container.scrollTop = container.scrollHeight;
+}
+
+function renderAIMessageHTML(text) {
+    if (!text) return '';
+    const escapeHTML = (str) => str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+
+    let escaped = escapeHTML(text);
+
+    // Handle fenced code blocks ```lang ... ```
+    escaped = escaped.replace(/```(?:[a-zA-Z0-9_-]+)?\s*([\s\S]*?)```/g, (_m, code) => {
+        return `<pre><code>${code.trim()}</code></pre>`;
+    });
+
+    // Handle inline code `...`
+    escaped = escaped.replace(/`([^`]+)`/g, (_m, code) => `<code>${code}</code>`);
+
+    // Convert remaining newlines to <br> for readability
+    escaped = escaped.replace(/\n/g, '<br>');
+
+    return escaped;
 }
 
 document.addEventListener('keydown', (e) => {
