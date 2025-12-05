@@ -408,8 +408,8 @@ async function loadUserRank() {
             const d = doc.data();
             const email = (d.studentEmail || '').toLowerCase();
             if (adminEmails && adminEmails.has(email)) return; // skip admin submissions
-            const q1 = d.q1Correct ? 5 : 0;
-            const q2 = d.q2Correct ? 5 : 0;
+            const q1 = d.q1Correct ? 4 : 0;
+            const q2 = d.q2Correct ? 6 : 0;
             const q3 = parseInt(d.q3Score || 0);
             if (!scores[email]) scores[email] = { email, totalScore: 0, totalTime: 0 };
             scores[email].totalScore += q1 + q2 + q3;
@@ -456,8 +456,8 @@ async function loadLeaderboard() {
             const email = (d.studentEmail || '').toLowerCase();
             if (adminEmails && adminEmails.has(email)) return; // skip admin submissions
             const name = d.studentName;
-            const q1 = d.q1Correct ? 5 : 0;
-            const q2 = d.q2Correct ? 5 : 0;
+            const q1 = d.q1Correct ? 4 : 0;
+            const q2 = d.q2Correct ? 6 : 0;
             const q3 = parseInt(d.q3Score || 0);
             if (!scores[email]) scores[email] = { name, email, totalScore: 0, completedDays: 0 };
             scores[email].totalScore += q1 + q2 + q3;
@@ -899,8 +899,8 @@ async function submitTest(isForced = false) {
         if (profileRank) profileRank.classList.remove('hidden');
 
         loadUserRank();
-        const q1Points = q1Correct ? 5 : 0;
-        const q2Points = q2Correct ? 5 : 0;
+        const q1Points = q1Correct ? 4 : 0;
+        const q2Points = q2Correct ? 6 : 0;
         const currentTotal = q1Points + q2Points;
         const testStatusEl = document.getElementById('testStatus');
         if (testStatusEl) {
@@ -914,10 +914,10 @@ async function submitTest(isForced = false) {
                             <p style="margin-top: 5px; font-size: 14px;">Q3 will be graded manually</p>
                         </div>
                         <div style="margin-bottom: 15px; text-align: left;">
-                            <strong>Q1 (5 points):</strong> <span class="${q1Correct ? 'correct' : 'incorrect'}">${q1Correct ? 'Correct (+5 pts)' : 'Incorrect (0 pts)'}</span>
+                            <strong>Q1 (4 points):</strong> <span class="${q1Correct ? 'correct' : 'incorrect'}">${q1Correct ? 'Correct (+4 pts)' : 'Incorrect (0 pts)'}</span>
                         </div>
                         <div style="margin-bottom: 15px; text-align: left;">
-                            <strong>Q2 (5 points):</strong> <span class="${q2Correct ? 'correct' : 'incorrect'}">${q2Correct ? 'Correct (+5 pts)' : 'Incorrect (0 pts)'}</span>
+                            <strong>Q2 (6 points):</strong> <span class="${q2Correct ? 'correct' : 'incorrect'}">${q2Correct ? 'Correct (+6 pts)' : 'Incorrect (0 pts)'}</span>
                         </div>
                         <div style="text-align: left;">
                             <strong>Q3 (10 points):</strong> Will be graded manually
@@ -1026,8 +1026,8 @@ async function loadHistory() {
             const card = document.createElement('div');
             card.className = 'score-card';
             const date = sub.timestamp ? new Date(sub.timestamp).toLocaleString() : '';
-            const q1Points = sub.q1_correct ? 5 : 0;
-            const q2Points = sub.q2_correct ? 5 : 0;
+            const q1Points = sub.q1_correct ? 4 : 0;
+            const q2Points = sub.q2_correct ? 6 : 0;
             const q3Points = parseInt(sub.q3_score || 0);
             const totalPoints = q1Points + q2Points + q3Points;
             let feedbackHTML = '';
@@ -1051,8 +1051,8 @@ async function loadHistory() {
                 <div class="score-header"><h3>Day ${sub.day}</h3><span style="color: #666; font-size: 14px;">${date}</span></div>
                 <div style="background: #EA5A2F; color: white; padding: 15px; border-radius: 8px; margin-bottom: 15px; text-align: center;"><strong style="font-size: 24px;">Total Score: ${totalPoints}/20</strong></div>
                 <div class="score-details">
-                    <div class="score-item"><strong>Q1:</strong> <span class="${sub.q1_correct ? 'correct' : 'incorrect'}">${sub.q1_correct ? 'Correct (+5 pts)' : 'Incorrect (0 pts)'}</span></div>
-                    <div class="score-item"><strong>Q2:</strong> <span class="${sub.q2_correct ? 'correct' : 'incorrect'}">${sub.q2_correct ? 'Correct (+5 pts)' : 'Incorrect (0 pts)'}</span></div>
+                    <div class="score-item"><strong>Q1:</strong> <span class="${sub.q1_correct ? 'correct' : 'incorrect'}">${sub.q1_correct ? 'Correct (+4 pts)' : 'Incorrect (0 pts)'}</span></div>
+                    <div class="score-item"><strong>Q2:</strong> <span class="${sub.q2_correct ? 'correct' : 'incorrect'}">${sub.q2_correct ? 'Correct (+6 pts)' : 'Incorrect (0 pts)'}</span></div>
                     <div class="score-item"><strong>Q3 Score:</strong> ${sub.q3_score !== undefined && sub.q3_score !== '' ? sub.q3_score + '/10 (+' + sub.q3_score + ' pts)' : 'Pending'}</div>
                     <div class="score-item"><strong>Time:</strong> ${Math.floor(sub.totalTime / 60)}m ${sub.totalTime % 60}s</div>
                 </div>

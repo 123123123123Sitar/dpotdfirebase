@@ -228,8 +228,8 @@ function renderLeaderboardTable() {
         if (!st.perDay[dayKey]) st.perDay[dayKey] = { q1Points: 0, q2Points: 0, q3Points:0, q1Time:0, q2Time:0, q3Time:0, totalTime:0, q1Answer:'', q2Answer:'', q3Answer:'', exitCount:0, exitLogs:[] };
         const pd = st.perDay[dayKey];
 
-        const q1p = s.q1Correct ? 5 : 0;
-        const q2p = s.q2Correct ? 5 : 0;
+        const q1p = s.q1Correct ? 4 : 0;
+        const q2p = s.q2Correct ? 6 : 0;
         const q3p = s.q3Score || 0;
 
         pd.q1Points += q1p;
@@ -827,8 +827,8 @@ function displayCurrentSubmission() {
         exitLogs = [];
     }
 
-    const q1Points = sub.q1_correct ? 5 : 0;
-    const q2Points = sub.q2_correct ? 5 : 0;
+    const q1Points = sub.q1_correct ? 4 : 0;
+    const q2Points = sub.q2_correct ? 6 : 0;
     const q3Points = sub.q3_score || 0;
     const totalPoints = q1Points + q2Points + parseInt(q3Points || 0);
     const rowKey = sub.id;
@@ -862,12 +862,12 @@ function displayCurrentSubmission() {
             <div class="question-group">
                 <h3>Q1 Answer</h3>
                 <p>${sub.q1_answer || '<em>No answer</em>'}</p>
-                <p><strong>${sub.q1_correct ? 'Correct (+5)' : 'Incorrect (0)'}</strong> • Time: ${formatTime(sub.q1_time || 0)}</p>
+                <p><strong>${sub.q1_correct ? 'Correct (+4)' : 'Incorrect (0)'}</strong> • Time: ${formatTime(sub.q1_time || 0)}</p>
             </div>
             <div class="question-group">
                 <h3>Q2 Answer</h3>
                 <p>${sub.q2_answer || '<em>No answer</em>'}</p>
-                <p><strong>${sub.q2_correct ? 'Correct (+5)' : 'Incorrect (0)'}</strong> • Time: ${formatTime(sub.q2_time || 0)}</p>
+                <p><strong>${sub.q2_correct ? 'Correct (+6)' : 'Incorrect (0)'}</strong> • Time: ${formatTime(sub.q2_time || 0)}</p>
             </div>
             <div class="question-group">
                 <div class="q3-header">
@@ -981,8 +981,8 @@ function exportToCSV() {
         let exitLogs = [];
         try { exitLogs = Array.isArray(sub.exitLogs) ? sub.exitLogs : JSON.parse(sub.exitLogs || '[]'); } catch (e) { exitLogs = []; }
         const violations = exitLogs.map(log => `${log.time}: ${log.type}`).join('; ');
-        const q1Points = sub.q1_correct ? 5 : 0;
-        const q2Points = sub.q2_correct ? 5 : 0;
+        const q1Points = sub.q1_correct ? 4 : 0;
+        const q2Points = sub.q2_correct ? 6 : 0;
         const q3Points = sub.q3_score || 0;
         const totalPoints = q1Points + q2Points + parseInt(q3Points || 0);
 
