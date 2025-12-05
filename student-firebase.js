@@ -32,8 +32,12 @@ async function getAdminEmails() {
 }
 // API Keys (Gemini helper reused)
 const GEMINI_API_KEY = 'AIzaSyBsszHZdjBZCfOeo_IscCD3HBHhnaRqhWs';
-// Using v1beta-proven model; 1.5 endpoints are not supported on this API version
-const GEMINI_MODEL = 'gemini-pro';
+// Try modern Gemini endpoints first; fall back to older model if needed
+const GEMINI_ENDPOINTS = [
+    { version: 'v1', model: 'gemini-1.5-flash-latest' },
+    { version: 'v1', model: 'gemini-1.0-pro-latest' },
+    { version: 'v1beta', model: 'gemini-pro' }
+];
 // Serverless reset endpoint (Vercel) to avoid Firebase default emails
 const RESET_API_URL = '/api/reset';
 
@@ -1155,34 +1159,40 @@ async function sendAIMessage() {
     if (input) input.value = '';
 
     try {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                systemInstruction: {
-                    role: 'system',
-                    parts: [{
-                        text: 'You are a LaTeX syntax helper. Only provide LaTeX formatting guidance. Do not solve problems, give math hints, or discuss non-LaTeX topics.'
-                    }]
-                },
-                contents: [{
-                    role: 'user',
-                    parts: [{ text: message }]
-                }],
-                generationConfig: { temperature: 0.2 }
-            })
-        });
-        const data = await response.json();
-        if (!response.ok) {
-            const errMsg = data.error?.message || 'Gemini request failed';
-            throw new Error(errMsg);
-        }
-        const reply = data.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('').trim();
-        if (!reply) throw new Error('Gemini returned an empty response.');
+        const reply = await callGeminiAPI(message);
         addAIMessage(reply, 'assistant');
     } catch (error) {
         addAIMessage('Error contacting AI helper: ' + error.message, 'assistant');
     }
+}
+
+async function callGeminiAPI(message) {
+    let lastError = null;
+    for (const cfg of GEMINI_ENDPOINTS) {
+        const url = `https://generativelanguage.googleapis.com/${cfg.version}/models/${cfg.model}:generateContent?key=${GEMINI_API_KEY}`;
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ role: 'user', parts: [{ text: message }] }],
+                    generationConfig: { temperature: 0.2 }
+                })
+            });
+            const data = await response.json();
+            if (!response.ok) {
+                const errMsg = data.error?.message || `${cfg.model} (${cfg.version}) request failed`;
+                throw new Error(errMsg);
+            }
+            const reply = data.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('').trim();
+            if (!reply) throw new Error(`${cfg.model} returned an empty response.`);
+            return reply;
+        } catch (err) {
+            lastError = err;
+            continue;
+        }
+    }
+    throw lastError || new Error('Gemini helper failed.');
 }
 
 function addAIMessage(message, type) {
