@@ -32,6 +32,7 @@ async function getAdminEmails() {
 }
 // API Keys (Gemini helper reused)
 const GEMINI_API_KEY = 'AIzaSyBsszHZdjBZCfOeo_IscCD3HBHhnaRqhWs';
+const GEMINI_MODEL = 'gemini-1.5-flash-latest';
 // Serverless reset endpoint (Vercel) to avoid Firebase default emails
 const RESET_API_URL = '/api/reset';
 
@@ -1145,17 +1146,38 @@ async function sendAIMessage() {
     const input = document.getElementById('aiInput');
     const message = input ? input.value.trim() : '';
     if (!message) return;
+    if (!GEMINI_API_KEY) {
+        addAIMessage('Missing Gemini API key.', 'assistant');
+        return;
+    }
     addAIMessage(message, 'user');
     if (input) input.value = '';
 
     try {
-        const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=' + GEMINI_API_KEY, {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts: [{ text: message }] }] })
+            body: JSON.stringify({
+                systemInstruction: {
+                    role: 'system',
+                    parts: [{
+                        text: 'You are a LaTeX syntax helper. Only provide LaTeX formatting guidance. Do not solve problems, give math hints, or discuss non-LaTeX topics.'
+                    }]
+                },
+                contents: [{
+                    role: 'user',
+                    parts: [{ text: message }]
+                }],
+                generationConfig: { temperature: 0.2 }
+            })
         });
         const data = await response.json();
-        const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response';
+        if (!response.ok) {
+            const errMsg = data.error?.message || 'Gemini request failed';
+            throw new Error(errMsg);
+        }
+        const reply = data.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('').trim();
+        if (!reply) throw new Error('Gemini returned an empty response.');
         addAIMessage(reply, 'assistant');
     } catch (error) {
         addAIMessage('Error contacting AI helper: ' + error.message, 'assistant');
