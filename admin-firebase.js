@@ -888,7 +888,7 @@ function displayCurrentSubmission() {
             </div>
             <div class="question-group">
                 <h3>Exit Logs</h3>
-                ${exitLogs.length === 0 ? '<p style="color:#666;">No violations recorded</p>' : exitLogs.map(log => `<p>• ${log.time} – ${log.type}</p>`).join('')}
+                ${exitLogs.length === 0 ? '<p style="color:#666;">No violations recorded</p>' : `<div class="exit-log-list">${exitLogs.map(log => `<p>• ${log.time} – ${log.type}</p>`).join('')}</div>`}
             </div>
         </div>
     `;
