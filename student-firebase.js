@@ -32,10 +32,11 @@ async function getAdminEmails() {
 }
 // API Keys (Gemini helper reused)
 const GEMINI_API_KEY = 'AIzaSyBsszHZdjBZCfOeo_IscCD3HBHhnaRqhWs';
-// Try modern Gemini endpoints first; fall back to older model if needed
+// Try modern Gemini endpoints first; fall back to older model if needed (v1beta is the public API surface)
 const GEMINI_ENDPOINTS = [
-    { version: 'v1', model: 'gemini-1.5-flash-latest' },
-    { version: 'v1', model: 'gemini-1.0-pro-latest' },
+    { version: 'v1beta', model: 'gemini-1.5-flash-latest' },
+    { version: 'v1beta', model: 'gemini-1.5-pro-latest' },
+    { version: 'v1beta', model: 'gemini-1.0-pro-latest' },
     { version: 'v1beta', model: 'gemini-pro' }
 ];
 // Serverless reset endpoint (Vercel) to avoid Firebase default emails
@@ -1167,7 +1168,7 @@ async function sendAIMessage() {
 }
 
 async function callGeminiAPI(message) {
-    let lastError = null;
+    const errors = [];
     for (const cfg of GEMINI_ENDPOINTS) {
         const url = `https://generativelanguage.googleapis.com/${cfg.version}/models/${cfg.model}:generateContent?key=${GEMINI_API_KEY}`;
         try {
@@ -1188,11 +1189,11 @@ async function callGeminiAPI(message) {
             if (!reply) throw new Error(`${cfg.model} returned an empty response.`);
             return reply;
         } catch (err) {
-            lastError = err;
+            errors.push(`${cfg.version}/${cfg.model}: ${err.message}`);
             continue;
         }
     }
-    throw lastError || new Error('Gemini helper failed.');
+    throw new Error(errors.join(' | '));
 }
 
 function addAIMessage(message, type) {
