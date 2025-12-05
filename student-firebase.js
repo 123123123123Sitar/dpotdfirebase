@@ -31,7 +31,7 @@ async function getAdminEmails() {
     return set;
 }
 // API Keys (Gemini helper reused)
-const GEMINI_API_KEY = 'AIzaSyAG0HmsIkxuESxsq0sYNPRANTfqHdIk6Tk';
+const GEMINI_API_KEY = 'AIzaSyBsszHZdjBZCfOeo_IscCD3HBHhnaRqhWs';
 // Serverless reset endpoint (Vercel) to avoid Firebase default emails
 const RESET_API_URL = '/api/reset';
 
