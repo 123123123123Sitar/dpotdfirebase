@@ -2,7 +2,6 @@
   "version": 2,
   "routes": [
     { "src": "/", "dest": "/student.html" },
-    { "src": "/admin", "dest": "/admin.html" },
-    { "src": "/student", "dest": "/student.html" }
+    { "src": "/syzygykevinlugoat", "dest": "/admin.html" },
   ]
 }
