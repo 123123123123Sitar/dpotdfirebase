@@ -1,9 +1,21 @@
 {
-    "version": 2,
+    "functions": {
+        "api/*.js": {
+            "runtime": "@vercel/node@3"
+        }
+    },
     "rewrites": [
         {
-            "source": "/api/:path*",
-            "destination": "/api/:path*"
+            "source": "/admin.html",
+            "destination": "/public/admin.html"
+        },
+        {
+            "source": "/grader.html",
+            "destination": "/public/grader.html"
+        },
+        {
+            "source": "/student.html",
+            "destination": "/public/student.html"
         },
         {
             "source": "/admin",
@@ -14,27 +26,28 @@
             "destination": "/public/grader.html"
         },
         {
+            "source": "/styles.css",
+            "destination": "/public/styles.css"
+        },
+        {
+            "source": "/firebase-config.js",
+            "destination": "/public/firebase-config.js"
+        },
+        {
+            "source": "/admin-firebase.js",
+            "destination": "/public/admin-firebase.js"
+        },
+        {
+            "source": "/grader-firebase.js",
+            "destination": "/public/grader-firebase.js"
+        },
+        {
+            "source": "/student-firebase.js",
+            "destination": "/public/student-firebase.js"
+        },
+        {
             "source": "/",
             "destination": "/public/student.html"
-        }
-    ],
-    "headers": [
-        {
-            "source": "/api/(.*)",
-            "headers": [
-                {
-                    "key": "Access-Control-Allow-Origin",
-                    "value": "*"
-                },
-                {
-                    "key": "Access-Control-Allow-Methods",
-                    "value": "GET, POST, OPTIONS"
-                },
-                {
-                    "key": "Access-Control-Allow-Headers",
-                    "value": "Content-Type"
-                }
-            ]
         }
     ]
 }
