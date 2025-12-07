@@ -139,6 +139,17 @@ function renderQueue() {
         html += statusBadge;
         html += '</div>';
 
+        // Strip boilerplate for preview
+        let previewText = sub.q3_answer || '';
+        previewText = previewText.replace(/\\documentclass\{[^}]+\}/g, '')
+            .replace(/\\usepackage\{[^}]+\}/g, '')
+            .replace(/\\begin\{document\}/g, '')
+            .replace(/\\end\{document\}/g, '')
+            .trim();
+        // Truncate if too long
+        if (previewText.length > 100) previewText = previewText.substring(0, 100) + '...';
+
+        html += '<p style="color:#666; font-size: 14px; margin-bottom: 10px;">' + escapeHtml(previewText || 'No answer provided') + '</p>';
         if (sub.aiScore !== undefined) {
             html += '<p style="color:#0c5460;margin-bottom:10px;">AI suggested score: <strong>' + sub.aiScore + '/10</strong></p>';
         }
@@ -164,7 +175,15 @@ function openGrading(index) {
     // Question 3 Answer
     html += '<div class="question-group">';
     html += '<h4>Q3 Student Answer (Proof/Explanation)</h4>';
-    html += '<div class="answer-text" id="studentAnswer">' + escapeHtml(sub.q3_answer || 'No answer provided') + '</div>';
+    // Strip boilerplate for full view display
+    let cleanAnswer = sub.q3_answer || 'No answer provided';
+    cleanAnswer = cleanAnswer.replace(/\\documentclass\{[^}]+\}/g, '')
+        .replace(/\\usepackage\{[^}]+\}/g, '')
+        .replace(/\\begin\{document\}/g, '')
+        .replace(/\\end\{document\}/g, '')
+        .trim();
+
+    html += '<div class="answer-text" id="studentAnswer" style="min-height: 100px; padding: 15px; background: #fff; border: 1px solid #ddd; border-radius: 4px;">' + cleanAnswer + '</div>';
     html += '</div>';
 
     // AI Suggestion (if available)
@@ -188,12 +207,18 @@ function openGrading(index) {
     html += '</div>';
     html += '<div class="form-group">';
     html += '<label for="gradeFeedback">Feedback (LaTeX supported):</label>';
-    html += '<textarea id="gradeFeedback" oninput="updatePreview()">' + (sub.aiFeedback || '') + '</textarea>';
+    html += '<textarea id="gradeFeedback" oninput="updatePreview()" style="min-height: 150px; font-family: monospace;">' + (sub.aiFeedback || '') + '</textarea>';
     html += '</div>';
-    html += '<div class="latex-preview" id="feedbackPreview">' + (sub.aiFeedback || 'Preview will appear here...') + '</div>';
-    html += '<div class="action-buttons">';
-    html += '<button class="btn" onclick="submitGrade(\'' + sub.id + '\')">Submit Grade</button>';
-    html += '<button class="btn-secondary" onclick="renderQueue()">Cancel</button>';
+    html += '</div>'; // End grading-section
+
+    // Separate Feedback Preview Card
+    html += '<div class="submission-card" style="margin-top: 20px; border-left: 4px solid #17a2b8;">';
+    html += '<h4 style="color: #17a2b8; margin-bottom: 15px;">Feedback Preview</h4>';
+    html += '<div class="latex-preview" id="feedbackPreview" style="min-height: 100px; padding: 15px; background: #f8f9fa; border-radius: 4px;">' + (sub.aiFeedback || 'Preview will appear here...') + '</div>';
+
+    html += '<div class="action-buttons" style="margin-top: 25px; display: flex; gap: 15px;">';
+    html += '<button class="btn" style="flex: 1;" onclick="submitGrade(\'' + sub.id + '\')">Submit Grade</button>';
+    html += '<button class="btn-secondary" style="flex: 1;" onclick="renderQueue()">Cancel & Return to Queue</button>';
     html += '</div>';
     html += '</div>';
     html += '</div>';

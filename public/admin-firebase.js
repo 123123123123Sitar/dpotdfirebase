@@ -389,7 +389,25 @@ async function loadSchedule() {
             const el = document.getElementById('day' + i);
             if (el) el.value = formatDateTimeLocal(openTime);
         }
+        // Attach auto-fill listener to Day 1
+        const d1 = document.getElementById('day1');
+        if (d1) {
+            d1.removeEventListener('change', autoFillSchedule); // avoid dupes
+            d1.addEventListener('change', autoFillSchedule);
+        }
     } catch (e) { showStatus('scheduleStatus', 'Error: ' + e.message, 'error'); }
+}
+
+function autoFillSchedule() {
+    const d1 = document.getElementById('day1');
+    if (!d1 || !d1.value) return;
+    const date1 = new Date(d1.value);
+
+    for (let i = 2; i <= 5; i++) {
+        const nextDate = new Date(date1.getTime() + (i - 1) * 24 * 60 * 60 * 1000);
+        const el = document.getElementById('day' + i);
+        if (el) el.value = formatDateTimeLocal(nextDate);
+    }
 }
 
 async function saveSchedule() {
@@ -579,8 +597,9 @@ function displayCurrentSubmission() {
     const total = q1P + q2P + parseInt(sub.q3_score || 0);
     const id = sub.id;
     const statusBadge = sub.gradingStatus === 'human_graded' ? 'Graded' : (sub.gradingStatus === 'ai_graded' ? 'AI Graded' : 'Pending');
-    container.innerHTML = '<div class="submission-card">' +
-        '<div class="submission-header"><h3>Day ' + sub.day + '</h3><span class="graded-badge ' + (sub.q3_score ? 'graded' : 'pending') + '">' + statusBadge + '</span></div>' +
+    container.innerHTML = '<div class="submission-card" style="margin-top: 20px;">' +
+        '<div class="submission-header" style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #eee;">' +
+        '<h3>Day ' + sub.day + '</h3><span class="graded-badge ' + (sub.q3_score ? 'graded' : 'pending') + '">' + statusBadge + '</span></div>' +
         '<div class="submission-details">' +
         '<div class="detail-item"><span class="detail-label">Student:</span> ' + escapeHtml(sub.studentName) + ' (' + escapeHtml(sub.studentEmail) + ')</div>' +
         '<div class="detail-item"><span class="detail-label">Time:</span> ' + formatMinutes(sub.totalTime) + '</div>' +
@@ -589,6 +608,9 @@ function displayCurrentSubmission() {
         '<div class="question-group"><h3>Q1</h3><p>' + (escapeHtml(sub.q1_answer) || 'No answer') + '</p><p><strong>' + (sub.q1_correct ? 'Correct (+4)' : 'Incorrect') + '</strong></p></div>' +
         '<div class="question-group"><h3>Q2</h3><p>' + (escapeHtml(sub.q2_answer) || 'No answer') + '</p><p><strong>' + (sub.q2_correct ? 'Correct (+6)' : 'Incorrect') + '</strong></p></div>' +
         '<div class="question-group"><h3>Q3 (Proof)</h3>' +
+        '<div class="answer-text" style="background:#f9f9f9; padding:15px; border-radius:4px; margin-bottom:15px; white-space:pre-wrap; border:1px solid #eee;">' +
+        (escapeHtml(sub.q3_answer) || 'No answer provided') +
+        '</div>' +
         '<div class="latex-editor-container">' +
         '<div class="latex-input-section"><h4>Score (0-10)</h4><input type="number" id="score_' + id + '" min="0" max="10" value="' + (sub.q3_score || '') + '">' +
         '<h4>Feedback (LaTeX)</h4><textarea id="feedback_latex_' + id + '" oninput="updateLatexPreview(\'' + id + '\')">' + (sub.q3_feedback || '') + '</textarea></div>' +
