@@ -75,18 +75,16 @@ ${studentAnswer}
 5. Keep feedback minimal but precise (2-4 sentences max)
 
 ## OUTPUT FORMAT
-Respond ONLY with valid JSON in this exact format:
+Respond with PURE JSON only. Do not use Markdown code blocks (no \`\`\`json). Do not include any introductory or concluding text.
 {
-    "score": <integer 0-10>,
-    "feedback": "<LaTeX formatted feedback>",
-    "confidence": "<low|medium|high>",
-    "rubricBreakdown": {
-        "<criterion1>": <points>,
-        "<criterion2>": <points>
+        "score": <integer 0 - 10 >,
+            "feedback": "<LaTeX formatted feedback>",
+                "confidence": "<low|medium|high>",
+                    "rubricBreakdown": {
+            "<criterion1>": <points>,
+                "<criterion2>": <points>
     }
-}
-
-Do not include any text outside the JSON object.`;
+}`;
 }
 
 /**
@@ -136,18 +134,21 @@ async function callGeminiAPI(prompt, apiKey) {
  */
 function parseGradingResponse(text) {
     // Try to extract JSON from the response
+    // Aggressive JSON extraction
     let jsonStr = text;
 
-    // Handle markdown code blocks
-    const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
-    if (jsonMatch) {
-        jsonStr = jsonMatch[1].trim();
+    // 1. Try extracting from code blocks first
+    const codeBlockMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (codeBlockMatch) {
+        jsonStr = codeBlockMatch[1];
     }
 
-    // Try to find JSON object
-    const objectMatch = jsonStr.match(/\{[\s\S]*\}/);
-    if (objectMatch) {
-        jsonStr = objectMatch[0];
+    // 2. Find the *first* opening brace and *last* closing brace
+    const firstBrace = jsonStr.indexOf('{');
+    const lastBrace = jsonStr.lastIndexOf('}');
+
+    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+        jsonStr = jsonStr.substring(firstBrace, lastBrace + 1);
     }
 
     try {
