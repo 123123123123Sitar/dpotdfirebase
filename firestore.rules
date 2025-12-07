@@ -19,32 +19,36 @@ service cloud.firestore {
 
     // Users collection
     match /users/{userId} {
-      allow read: if request.auth != null; // Allow authenticated users to read profiles (needed for admin/grader checks)
-      allow write: if isAdmin(); // Only admins can create/edit users
+      allow read: if request.auth != null; 
+      allow write: if isAdmin();
     }
 
-    // Questions (Read by students/graders, Write by admins)
+    // Questions: Read by students (auth only), Write by admins
     match /questions/{day} {
       allow read: if request.auth != null;
       allow write: if isAdmin();
     }
 
-    // Schedule
+    // Schedule: Read by students (auth only), Write by admins
     match /schedule/{day} {
       allow read: if request.auth != null;
       allow write: if isAdmin();
     }
 
-    // Settings
+    // Settings: Public read for login logic
     match /settings/{docId} {
-      allow read: if true; // App settings need to be public for login checks sometimes, or at least auth'd
+      allow read: if true; 
       allow write: if isAdmin();
     }
 
-    // Active Tests (Students writing their own test session)
+    // Active Tests: 
+    // - Students need to read their OWN active test (checkTodayTest)
+    // - Students also need to CREATE/UPDATE their own active test
     match /activeTests/{testId} {
+      allow create: if request.auth != null;
       allow read: if request.auth != null && (resource.data.userId == request.auth.uid || isAdmin());
-      allow write: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow update: if request.auth != null && (resource.data.userId == request.auth.uid || isAdmin());
+      allow delete: if isAdmin(); // Only admins should delete logs if needed
     }
 
     // Submissions
@@ -52,11 +56,17 @@ service cloud.firestore {
       // Students can create their submission
       allow create: if request.auth != null && request.resource.data.studentEmail == request.auth.token.email;
       
-      // Students can read their own submissions
-      allow read: if request.auth != null && (resource.data.studentEmail == request.auth.token.email || isGrader());
+      // READ RULES:
+      // 1. Owner can read fully
+      // 2. Grader/Admin can read fully
+      // 3. Students need to read ALL submissions for the leaderboard?
+      //    IF the leaderboard logic is client-side (download all docs), we MUST allow list.
+      //    Ideally, we'd use a cloud function to aggregate leaderboard, but for this quick app, we allow read.
       
-      // Graders can update grading fields
-      allow update: if isGrader();
+      allow read: if request.auth != null; // <--- CHANGED: Open read to auth users for leaderboard
+      
+      // Graders can update grading gradingStatus, q3Score, etc.
+      allow update: if isGrader() || (request.auth != null && resource.data.studentEmail == request.auth.token.email);
     }
   }
 }
