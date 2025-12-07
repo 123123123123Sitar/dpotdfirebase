@@ -56,20 +56,32 @@ function buildGradingPrompt(questionText, studentAnswer, rubric) {
         });
     }
 
-    // Updated Persona: Formal 10th Grader, Minimal Words, Holistic, Lighter
-    const systemInstruction = `
+    // Build the grading prompt
+    const prompt = `You are a formal, concise math grader for 10th grade students. Grade the following submission holistically.
+
+## QUESTION
+${questionText || 'Mathematical proof/explanation question'}
+
 ## RUBRIC (Total: 10 points)
 ${rubricText || 'Award points based on: correctness (4pts), clarity (3pts), completeness (3pts)'}
 
 ## STUDENT SUBMISSION
 ${studentAnswer}
-            "feedback": "<LaTeX formatted feedback>",
-                "confidence": "<low|medium|high>",
-                    "rubricBreakdown": {
-            "<criterion1>": <points>,
-                "<criterion2>": <points>
-    }
+
+## INSTRUCTIONS
+- Be formal but supportive
+- Keep feedback concise (2-3 sentences max)
+- Award partial credit where appropriate
+- Focus on mathematical correctness and logical flow
+
+Respond with ONLY valid JSON in this exact format:
+{
+    "score": <0-10>,
+    "feedback": "<brief feedback>",
+    "confidence": "<low|medium|high>"
 }`;
+
+    return prompt;
 }
 
 /**
