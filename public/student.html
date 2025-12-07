@@ -25,30 +25,6 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
     <script src="firebase-config.js"></script>
 
-    <!-- Ensure rubric functions exist before student-firebase.js runs to avoid ReferenceError -->
-    <script>
-        // lightweight stubs — real implementations in student.html will replace these later
-        if (!window.fetchAndShowRubric) {
-            window.fetchAndShowRubric = function (day) {
-                // stub: will be overwritten by page script; no-op to avoid errors
-                console.debug('fetchAndShowRubric stub called for day', day);
-            };
-        }
-        if (!window.toggleRubricVisibility) {
-            window.toggleRubricVisibility = function () {
-                // minimal toggle fallback so UI calls won't throw
-                try {
-                    const d = document.getElementById('q3RubricDisplay');
-                    const b = document.getElementById('toggleRubricBtn');
-                    if (!d) return;
-                    const isHidden = (getComputedStyle(d).display === 'none');
-                    d.style.display = isHidden ? 'block' : 'none';
-                    if (b) b.textContent = isHidden ? 'Hide Rubric' : 'Show Rubric';
-                } catch (e) { /* swallow errors in stub */ }
-            };
-        }
-    </script>
-
     <script src="student-firebase.js"></script>
     <style>
         * {
@@ -449,6 +425,13 @@
             border: 1px solid #ddd;
             border-radius: 4px;
             overflow-y: auto;
+        }
+
+        /* Active Navigation Button Style */
+        .question-nav-btn.active {
+            background-color: #EA5A2F !important;
+            color: white !important;
+            border-color: #EA5A2F !important;
         }
 
         .timer {
@@ -1360,15 +1343,6 @@
                     <h2>Question 3</h2>
                     <p id="q3Text"></p>
                     <img id="q3Image" class="question-image" style="display: none;">
-                    <div id="q3RubricControls"
-                        style="margin-top:10px; margin-bottom:6px; display:flex; align-items:center;">
-                        <strong style="color:#333;">Rubric</strong>
-                        <button id="toggleRubricBtn" class="rubric-toggle hidden"
-                            onclick="toggleRubricVisibility()">Hide Rubric</button>
-                    </div>
-                    <div id="q3RubricDisplay" class="feedback-box" style="display:none;">
-                        <div id="q3RubricHtml" style="color:#333; line-height:1.5;"></div>
-                    </div>
                 </div>
                 <div class="latex-editor-container">
                     <div class="latex-input-section">
@@ -1395,202 +1369,6 @@
             </a>
         </div>
     </div>
-
-    <script>
-        // Reorder and re-rank a rendered leaderboard table inside #leaderboardContainer
-        (function () {
-            // ...existing leaderboard reorder code...
-        })();
-
-        // Rubric rendering and management (must be defined before fetchAndShowRubric)
-        (function () {
-            function currentDayFromTitle() {
-                const el = document.getElementById('testTitle');
-                if (!el) return null;
-                const txt = (el.textContent || '').toLowerCase();
-                const m = txt.match(/day\s*(\d+)/i);
-                return m ? m[1] : null;
-            }
-
-            function renderRubricIntoContainer(rubric, container) {
-                container.innerHTML = '';
-                if (!rubric) return;
-
-                // legacy string -> render paragraph
-                if (typeof rubric === 'string') {
-                    if (rubric.trim()) container.innerHTML = rubric.replace(/\n/g, '<br>');
-                    return;
-                }
-
-                // Expect array of tables
-                if (!Array.isArray(rubric) || rubric.length === 0) return;
-
-                rubric.forEach(tbl => {
-                    const wrapper = document.createElement('div');
-                    wrapper.style = 'margin-bottom:12px;overflow:auto;';
-                    if (tbl.title) {
-                        const h = document.createElement('h4');
-                        h.textContent = tbl.title;
-                        h.style = 'margin:0 0 6px 0;color:#EA5A2F;';
-                        wrapper.appendChild(h);
-                    }
-
-                    const tableEl = document.createElement('table');
-                    tableEl.style = 'width:100%;border-collapse:collapse;border:1px solid #e6e6e6;margin-bottom:6px;';
-
-                    // header (if columns provided)
-                    if (Array.isArray(tbl.columns) && tbl.columns.length) {
-                        const thead = document.createElement('thead');
-                        const tr = document.createElement('tr');
-                        tbl.columns.forEach(c => {
-                            const th = document.createElement('th');
-                            th.textContent = c || '';
-                            th.style = 'padding:8px;border-right:1px solid #e6e6e6;background:#f1f1f1;text-align:left;';
-                            tr.appendChild(th);
-                        });
-                        thead.appendChild(tr);
-                        tableEl.appendChild(thead);
-                    }
-
-                    const tbody = document.createElement('tbody');
-
-                    if (Array.isArray(tbl.rows)) {
-                        tbl.rows.forEach(row => {
-                            const tr = document.createElement('tr');
-
-                            if (Array.isArray(row)) {
-                                // array-form row
-                                row.forEach(cell => {
-                                    const td = document.createElement('td');
-                                    td.innerHTML = (cell || '').toString().replace(/\n/g, '<br>');
-                                    td.style = 'padding:8px;border-top:1px solid #e6e6e6;';
-                                    tr.appendChild(td);
-                                });
-                            } else if (row && typeof row === 'object') {
-                                // object-form row: c0,c1,... use tbl.columns length if available
-                                if (Array.isArray(tbl.columns) && tbl.columns.length) {
-                                    for (let i = 0; i < tbl.columns.length; i++) {
-                                        const cell = row[`c${i}`] || '';
-                                        const td = document.createElement('td');
-                                        td.innerHTML = (cell || '').toString().replace(/\n/g, '<br>');
-                                        td.style = 'padding:8px;border-top:1px solid #e6e6e6;';
-                                        tr.appendChild(td);
-                                    }
-                                } else {
-                                    // no columns metadata: render keys c0..cn in numeric order
-                                    const keys = Object.keys(row).filter(k => /^c\d+$/.test(k))
-                                        .sort((a, b) => parseInt(a.slice(1), 10) - parseInt(b.slice(1), 10));
-                                    keys.forEach(k => {
-                                        const td = document.createElement('td');
-                                        td.innerHTML = (row[k] || '').toString().replace(/\n/g, '<br>');
-                                        td.style = 'padding:8px;border-top:1px solid #e6e6e6;';
-                                        tr.appendChild(td);
-                                    });
-                                }
-                            } else {
-                                // fallback: empty cell
-                                const td = document.createElement('td');
-                                td.innerHTML = '';
-                                td.style = 'padding:8px;border-top:1px solid #e6e6e6;';
-                                tr.appendChild(td);
-                            }
-
-                            tbody.appendChild(tr);
-                        });
-                    }
-
-                    tableEl.appendChild(tbody);
-                    wrapper.appendChild(tableEl);
-                    container.appendChild(wrapper);
-                });
-            }
-
-            function fetchAndShowRubric(day) {
-                const db = firebase.firestore();
-                const today = day || currentDayFromTitle();
-                const container = document.getElementById('q3RubricHtml');
-                const display = document.getElementById('q3RubricDisplay');
-                const toggleBtn = document.getElementById('toggleRubricBtn');
-                if (!today || !container || !display) return;
-
-                // Read the questions document for today's day and use its q3Rubric field.
-                db.collection('questions').doc(`day${today}`).get()
-                    .then(doc => {
-                        if (!doc.exists) {
-                            display.style.display = 'none';
-                            if (toggleBtn) toggleBtn.classList.add('hidden');
-                            return;
-                        }
-                        const data = doc.data() || {};
-                        const rubric = data.q3Rubric || data.rubric || '';
-                        if ((typeof rubric === 'string' && rubric.trim()) || (Array.isArray(rubric) && rubric.length > 0)) {
-                            renderRubricIntoContainer(rubric, container);
-                            setTimeout(() => {
-                                display.style.display = 'block';
-                                if (toggleBtn) {
-                                    toggleBtn.classList.remove('hidden');
-                                    toggleBtn.textContent = 'Hide Rubric';
-                                }
-                            }, 50);
-                        } else {
-                            display.style.display = 'none';
-                            if (toggleBtn) toggleBtn.classList.add('hidden');
-                        }
-                    })
-                    .catch(err => {
-                        console.warn('Failed to load rubric (questions doc):', err);
-                        if (display) display.style.display = 'none';
-                        if (toggleBtn) toggleBtn.classList.add('hidden');
-                    });
-            }
-
-            // Allow toggling rubric visibility in the UI
-            window.toggleRubricVisibility = function () {
-                const display = document.getElementById('q3RubricDisplay');
-                const btn = document.getElementById('toggleRubricBtn');
-                if (!display || !btn) return;
-                if (display.style.display === 'none' || getComputedStyle(display).display === 'none') {
-                    display.style.display = 'block';
-                    btn.textContent = 'Hide Rubric';
-                } else {
-                    display.style.display = 'none';
-                    btn.textContent = 'Show Rubric';
-                }
-            };
-
-            // expose for external callers (e.g., showQuestion in student-firebase.js)
-            window.fetchAndShowRubric = fetchAndShowRubric;
-
-            // Monitor q3Page visibility and load rubric when shown
-            function observeQ3Visibility() {
-                const q3Page = document.getElementById('q3Page');
-                if (!q3Page) return;
-
-                const observer = new IntersectionObserver((entries) => {
-                    entries.forEach(entry => {
-                        if (entry.isIntersecting) {
-                            const day = currentDayFromTitle();
-                            if (day) fetchAndShowRubric(day);
-                        }
-                    });
-                }, { threshold: 0.1 });
-
-                observer.observe(q3Page);
-
-                // Also check immediately in case q3Page is already visible
-                setTimeout(() => {
-                    const style = window.getComputedStyle(q3Page);
-                    if (style && style.display !== 'none') {
-                        const day = currentDayFromTitle();
-                        if (day) fetchAndShowRubric(day);
-                    }
-                }, 100);
-            }
-
-            // Initial call to set up observer
-            observeQ3Visibility();
-        })();
-    </script>
 </body>
 
 </html>
