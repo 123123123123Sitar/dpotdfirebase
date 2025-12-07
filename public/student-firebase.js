@@ -109,6 +109,7 @@ appAuth.onAuthStateChanged(async (user) => {
     if (!user) {
         currentUser = null;
         localStorage.removeItem('dpotdUser');
+        const mainPortal = document.getElementById('mainPortal');
         if (mainPortal) {
             mainPortal.style.display = 'none';
             mainPortal.classList.add('hidden');
