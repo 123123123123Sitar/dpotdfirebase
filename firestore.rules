@@ -1,72 +1,87 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Helper functions
+
+    // --- Helper Functions ---
+    // Check if user has 'isAdmin' flag in their user profile
     function isAdmin() {
-      return request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+      return request.auth != null && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
     }
-    
+
+    // Check if user is a Grader or Admin
     function isGrader() {
-      return request.auth != null && (
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isGrader == true ||
-        isAdmin()
-      );
+      return request.auth != null && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             (
+               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isGrader == true ||
+               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true
+             );
     }
-    
+
     function isOwner(userId) {
       return request.auth != null && request.auth.uid == userId;
     }
 
-    // Users collection
+    // --- Collection Rules ---
+
+    // 1. Users (Allows users to manage their own profile, Admins manage all)
     match /users/{userId} {
-      allow read: if request.auth != null; 
-      allow write: if isAdmin();
+      allow read: if request.auth != null; // Needed for isGrader/isAdmin checks to work
+      allow write: if isOwner(userId) || isAdmin();
     }
 
-    // Questions: Read by students (auth only), Write by admins
-    match /questions/{day} {
+    // 2. Questions
+    match /questions/{questionId} {
       allow read: if request.auth != null;
       allow write: if isAdmin();
     }
 
-    // Schedule: Read by students (auth only), Write by admins
+    // 3. Submissions 
+    match /submissions/{submissionId} {
+      // Allow read so students can see leaderboard, graders can grade
+      allow read: if request.auth != null;
+      
+      // Allow creation by authenticated users
+      allow create: if request.auth != null; 
+      
+      // Allow update if Owner OR Grader OR Admin
+      // Supports both userId field and studentEmail field pattern
+      allow update: if (request.auth != null && resource.data.userId == request.auth.uid) || 
+                       (request.auth != null && resource.data.studentEmail == request.auth.token.email) ||
+                       isGrader() || 
+                       isAdmin();
+    }
+
+    // 4. Active Tests 
+    match /activeTests/{testId} {
+      // FIX: Allow any authenticated user to read (User Request)
+      allow read: if request.auth != null; 
+      
+      // Allow creating if logged in
+      allow create: if request.auth != null;
+
+      // Allow updating/deleting only if Owner OR Admin
+      allow update, delete: if (request.auth != null && resource.data.userId == request.auth.uid) || isAdmin();
+    }
+
+    // 5. Schedule
     match /schedule/{day} {
       allow read: if request.auth != null;
       allow write: if isAdmin();
     }
 
-    // Settings: Public read for login logic
-    match /settings/{docId} {
-      allow read: if true; 
+    // 6. Settings
+    match /settings/{setting} {
+      allow read: if true; // Login page might need this
       allow write: if isAdmin();
     }
 
-    // Active Tests: 
-    // - Students need to read their OWN active test (checkTodayTest)
-    // - Students also need to CREATE/UPDATE their own active test
-    match /activeTests/{testId} {
-      allow create: if request.auth != null;
-      allow read: if request.auth != null && (resource.data.userId == request.auth.uid || isAdmin());
-      allow update: if request.auth != null && (resource.data.userId == request.auth.uid || isAdmin());
-      allow delete: if isAdmin(); // Only admins should delete logs if needed
-    }
-
-    // Submissions
-    match /submissions/{submissionId} {
-      // Students can create their submission
-      allow create: if request.auth != null && request.resource.data.studentEmail == request.auth.token.email;
-      
-      // READ RULES:
-      // 1. Owner can read fully
-      // 2. Grader/Admin can read fully
-      // 3. Students need to read ALL submissions for the leaderboard?
-      //    IF the leaderboard logic is client-side (download all docs), we MUST allow list.
-      //    Ideally, we'd use a cloud function to aggregate leaderboard, but for this quick app, we allow read.
-      
-      allow read: if request.auth != null; // <--- CHANGED: Open read to auth users for leaderboard
-      
-      // Graders can update grading gradingStatus, q3Score, etc.
-      allow update: if isGrader() || (request.auth != null && resource.data.studentEmail == request.auth.token.email);
+    // 7. Leaderboard (if exists)
+    match /leaderboard/{entry} {
+      allow read: if true;
+      allow write: if false;
     }
   }
 }
