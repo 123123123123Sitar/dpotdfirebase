@@ -3,7 +3,33 @@ const appAuth = firebase.auth();
 const firestore = firebase.firestore();
 
 // API Keys (Gemini helper reused)
+// API Keys (Gemini helper reused)
 const GEMINI_API_KEY = 'AIzaSyBsszHZdjBZCfOeo_IscCD3HBHhnaRqhWs';
+
+const LATEX_BOILERPLATE = `\\documentclass{article}
+\\usepackage{amsmath}
+
+\\begin{document}
+
+Write your proof here. 
+
+For inline math, use: $x^2 + y^2 = z^2$
+
+For display math, use double dollar signs:
+$$
+\\frac{a}{b} = \\frac{c}{d}
+$$
+
+Common symbols:
+- Fractions: $\\frac{numerator}{denominator}$
+- Exponents: $x^2$ or $x^{10}$
+- Subscripts: $x_1$ or $x_{10}$
+- Square root: $\\sqrt{x}$ or $\\sqrt[3]{x}$
+- Summation: \\sum_{i=1}^{n} i
+- Integral: \\int_0^1 f(x) dx
+
+\\end{document}`;
+
 // Try modern Gemini endpoints first; fall back to older models if needed
 const GEMINI_ENDPOINTS = [
     // 2.5 generation
@@ -179,29 +205,7 @@ window.addEventListener('DOMContentLoaded', () => {
         latexInput.addEventListener('input', updateLatexPreview);
         // Pre-fill helper text if empty
         if (!latexInput.value.trim()) {
-            latexInput.value = `\\documentclass{article}
-\\usepackage{amsmath}
-
-\\begin{document}
-
-Write your proof here. 
-
-For inline math, use: $x^2 + y^2 = z^2$
-
-For display math, use double dollar signs:
-$$
-\\frac{a}{b} = \\frac{c}{d}
-$$
-
-Common symbols:
-- Fractions: $\\frac{numerator}{denominator}$
-- Exponents: $x^2$ or $x^{10}$
-- Subscripts: $x_1$ or $x_{10}$
-- Square root: $\\sqrt{x}$ or $\\sqrt[3]{x}$
-- Summation: $\\sum_{i=1}^{n} i$
-- Integral: $\\int_0^1 f(x) dx$
-
-\\end{document}`;
+            latexInput.value = LATEX_BOILERPLATE;
             updateLatexPreview();
         }
     }
@@ -664,7 +668,7 @@ async function resumeTest() {
     renderQuestions(questionsData);
     document.getElementById('q1Answer').value = data.q1Answer || '';
     document.getElementById('q2Answer').value = data.q2Answer || '';
-    document.getElementById('latexInput').value = data.q3Answer || '';
+    document.getElementById('latexInput').value = data.q3Answer || LATEX_BOILERPLATE;
     exitCount = data.exitCount || 0;
     exitLogs = data.exitLogs || [];
     startTime = data.startTime ? data.startTime.toMillis() : Date.now();
@@ -718,7 +722,8 @@ async function startTest() {
         currentQuestion: 0,
         q1Answer: '',
         q2Answer: '',
-        q3Answer: '',
+        q2Answer: '',
+        q3Answer: LATEX_BOILERPLATE,
         exitCount: 0,
         exitLogs: [],
         status: 'active'
