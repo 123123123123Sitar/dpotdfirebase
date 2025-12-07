@@ -249,22 +249,12 @@ export default async function handler(req, res) {
         const { text, model } = await callGeminiAPI(prompt, apiKey);
         const result = parseGradingResponse(text);
 
-        // Format feedback with LaTeX wrapper if needed
-        let formattedFeedback = result.feedback;
-        if (!formattedFeedback.includes('\\documentclass')) {
-            formattedFeedback = `\\documentclass{article}
-\\usepackage{amsmath}
-\\begin{document}
-
-${formattedFeedback}
-
-\\end{document}`;
-        }
+        // Return feedback as-is (no LaTeX document wrapper - MathJax doesn't need it)
 
         return res.status(200).json({
             success: true,
             score: result.score,
-            feedback: formattedFeedback,
+            feedback: result.feedback,
             confidence: result.confidence,
             rubricBreakdown: result.rubricBreakdown,
             model: model
