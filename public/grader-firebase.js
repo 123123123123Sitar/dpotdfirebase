@@ -246,6 +246,11 @@ async function submitGrade(submissionId) {
     }
 
     try {
+        // Fetch submission first to get student details for email
+        const subDoc = await firestore.collection('submissions').doc(submissionId).get();
+        if (!subDoc.exists) throw new Error("Submission not found");
+        const subData = subDoc.data();
+
         await firestore.collection('submissions').doc(submissionId).update({
             q3Score: score,
             q3Feedback: feedback,
@@ -254,6 +259,24 @@ async function submitGrade(submissionId) {
             gradedByName: currentGrader.name,
             humanGradedAt: firebase.firestore.FieldValue.serverTimestamp()
         });
+
+        // Send email notification with calculated total score
+        const q1Score = subData.q1Correct ? 4 : 0;
+        const q2Score = subData.q2Correct ? 6 : 0;
+        const totalScore = q1Score + q2Score + score;
+
+        fetch('/api/send-notification', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                type: 'submission_graded',
+                studentEmail: subData.studentEmail,
+                studentName: subData.studentName,
+                day: subData.day,
+                score: totalScore,
+                totalPossible: 20
+            })
+        }).catch(err => console.error("Failed to send notification:", err));
 
         alert('Grade submitted successfully!');
         loadQueue();

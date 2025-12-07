@@ -14,6 +14,18 @@
  */
 
 const nodemailer = require('nodemailer');
+const admin = require('firebase-admin');
+
+// Initialize Firebase Admin if not already initialized
+if (!admin.apps.length) {
+    admin.initializeApp({
+        credential: admin.credential.cert({
+            projectId: process.env.FIREBASE_PROJECT_ID,
+            clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+            privateKey: process.env.FIREBASE_PRIVATE_KEY ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n') : undefined,
+        })
+    });
+}
 
 // Create Gmail transporter
 function createTransporter() {
@@ -181,9 +193,82 @@ module.exports = async function handler(req, res) {
 
         switch (type) {
             case 'feedback_ready':
+                // Keeping this for compatibility, but submission_graded is preferred for graded events
                 subject = `D.PotD Day ${day} - Your Feedback is Ready`;
                 html = generateFeedbackEmail(studentName, day, score, totalPossible);
                 text = generatePlainTextEmail(studentName, day, score, totalPossible);
+                break;
+
+            case 'submission_graded':
+                // Need to calculate rank first
+                let rank = '--';
+                let totalStudents = '--';
+                try {
+                    // Fetch all submissions for today to calculate rank.
+                    // This is lightweight enough for small-medium scale (Math Club).
+                    // In production with thousands, this should be cached or aggregated.
+                    const db = admin.firestore();
+                    // We need to filter out admins, but admins typically don't submit.
+                    const snapshot = await db.collection('submissions').get();
+
+                    const scores = {};
+                    snapshot.forEach(doc => {
+                        const d = doc.data();
+                        const email = (d.studentEmail || '').toLowerCase();
+                        // Assume admin check is not strictly needed here or admins just rank high/low
+                        const q1 = d.q1Correct ? 4 : 0;
+                        const q2 = d.q2Correct ? 6 : 0;
+                        const q3 = parseInt(d.q3Score || 0); // Ensure q3 is included
+
+                        if (!scores[email]) {
+                            scores[email] = { totalScore: 0, totalTime: 0 };
+                        }
+                        scores[email].totalScore += q1 + q2 + q3;
+                        scores[email].totalTime += d.totalTime || 0;
+                    });
+
+                    // Sort: Score desc, Time asc
+                    const leaderboard = Object.entries(scores).sort((a, b) => {
+                        if (b[1].totalScore !== a[1].totalScore) return b[1].totalScore - a[1].totalScore;
+                        return a[1].totalTime - b[1].totalTime;
+                    });
+
+                    const myRankIdx = leaderboard.findIndex(e => e[0] === studentEmail.toLowerCase());
+                    if (myRankIdx !== -1) {
+                        rank = myRankIdx + 1;
+                        totalStudents = leaderboard.length;
+                    }
+                } catch (e) {
+                    console.warn('Rank calculation failed:', e);
+                }
+
+                subject = `D.PotD Day ${day} Graded - Rank #${rank}`;
+                // Using the same nice feedback email template but custom message
+                const percentage = Math.round((score / totalPossible) * 100);
+                const color = percentage >= 80 ? '#28a745' : percentage >= 60 ? '#ffc107' : '#dc3545';
+
+                html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;font-family:sans-serif;background:#f5f5f5;">
+<table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background:#fff;">
+<tr><td style="background:#EA5A2F;padding:30px;text-align:center;"><h1 style="color:#fff;margin:0;">D.PotD Graded</h1></td></tr>
+<tr><td style="padding:40px 30px;">
+<h2 style="color:#333;">Hi ${studentName}!</h2>
+<p style="color:#666;font-size:16px;">Your submission for Day ${day} has been graded.</p>
+<div style="background:#f8f9fa;border-radius:8px;padding:25px;text-align:center;margin:25px 0;">
+<p style="text-transform:uppercase;color:#666;font-size:12px;letter-spacing:1px;margin:0;">Your Score</p>
+<p style="color:${color};font-size:48px;font-weight:700;margin:5px 0;">${score}<span style="color:#999;font-size:24px;">/${totalPossible}</span></p>
+<div style="margin-top:20px;padding-top:20px;border-top:1px solid #e9ecef;display:flex;justify-content:space-around;">
+<div><strong style="display:block;font-size:24px;color:#333;">#${rank}</strong><span style="color:#999;font-size:12px;">GLOBAL RANK (of ${totalStudents})</span></div>
+</div>
+</div>
+<p style="color:#666;">Log in to view your detailed feedback.</p>
+</td></tr>
+<tr><td style="background:#f8f9fa;padding:20px;text-align:center;"><p style="color:#ccc;font-size:11px;">D.PotD Math Club</p></td></tr>
+</table></body></html>`.trim();
+                text = `Hi ${studentName},\n\nYour Day ${day} score: ${score}/${totalPossible}\nGlobal Rank: #${rank} of ${totalStudents}\n\nLog in for details.`;
                 break;
 
             case 'reminder':

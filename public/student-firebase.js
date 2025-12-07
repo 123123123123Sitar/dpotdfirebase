@@ -66,10 +66,25 @@ function showForgotPassword() {
 
 async function requestPasswordReset() {
     const email = document.getElementById('resetEmail').value.trim();
-    if (!email) { showStatus('resetStatus', 'Please enter your email address', 'error'); return; }
+    if (!email) {
+        showStatus('resetStatus', 'Please enter your email address', 'error');
+        return;
+    }
     showLoading('Sending reset link...');
     try {
-        await appAuth.sendPasswordResetEmail(email);
+        // Use server-side API to generate and send custom email
+        const response = await fetch('/api/send-password-reset', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to send reset email');
+        }
+
         hideLoading();
         showStatus('resetStatus', 'Password reset email sent. Check your inbox.', 'success');
         document.getElementById('resetEmail').value = '';
