@@ -94,6 +94,15 @@ function formatMinutes(seconds) {
     return (Number(seconds || 0) / 60).toFixed(2) + ' min';
 }
 
+function generateStrongPassword() {
+    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let password = 'A1a'; // Ensure at least one upper, one number, one lower
+    for (let i = 0; i < 7; i++) {
+        password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return password;
+}
+
 function switchTab(tabName) {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -195,7 +204,7 @@ async function addGrader() {
     const name = document.getElementById('newGraderName').value.trim();
     const email = document.getElementById('newGraderEmail').value.trim();
     if (!name || !email) return alert('Please fill name and email');
-    const tempPassword = name.replace(/\s/g, '') + Math.random().toString(36).substring(2, 6);
+    const tempPassword = generateStrongPassword();
     try {
         const newUser = await secondaryAuth.createUserWithEmailAndPassword(email, tempPassword);
         await firestore.collection('users').doc(newUser.user.uid).set({
@@ -487,7 +496,7 @@ async function addUser() {
     const name = nameEl ? nameEl.value.trim() : '';
     const email = emailEl ? emailEl.value.trim() : '';
     if (!name || !email) return alert('Please fill name and email');
-    const tempPassword = name.replace(/\s/g, '') + Math.random().toString(36).substring(2, 6);
+    const tempPassword = generateStrongPassword();
     try {
         const newUser = await secondaryAuth.createUserWithEmailAndPassword(email, tempPassword);
         await firestore.collection('users').doc(newUser.user.uid).set({
