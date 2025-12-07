@@ -142,20 +142,25 @@ function renderQueue() {
         // Strip boilerplate for preview
         let previewText = sub.q3_answer || '';
 
-        // Robust stripping
-        previewText = previewText.replace(/\\documentclass(\[[^\]]*\])?\s*\{[^}]+\}/g, '');
-        previewText = previewText.replace(/\\usepackage(\[[^\]]*\])?\s*\{[^}]+\}/g, '');
-        previewText = previewText.replace(/\\title\{[^}]*\}/g, '');
-        previewText = previewText.replace(/\\author\{[^}]*\}/g, '');
-        previewText = previewText.replace(/\\date\{[^}]*\}/g, '');
-        previewText = previewText.replace(/\\maketitle/g, '');
-
+        // 1. Try to extract the document body first (most reliable)
         const docMatch = previewText.match(/\\begin\s*\{document\}([\s\S]*?)\\end\s*\{document\}/);
         if (docMatch) {
             previewText = docMatch[1];
         } else {
-            previewText = previewText.replace(/\\begin\s*\{document\}/g, '');
-            previewText = previewText.replace(/\\end\s*\{document\}/g, '');
+            // 2. Fallback: Line-by-line cleaner
+            let lines = previewText.split('\n');
+            lines = lines.filter(line => {
+                const l = line.trim();
+                return !(l.startsWith('\\documentclass') ||
+                    l.startsWith('\\usepackage') ||
+                    l.startsWith('\\title') ||
+                    l.startsWith('\\author') ||
+                    l.startsWith('\\date') ||
+                    l.startsWith('\\maketitle') ||
+                    l.includes('\\begin{document}') ||
+                    l.includes('\\end{document}'));
+            });
+            previewText = lines.join('\n');
         }
 
         previewText = previewText.trim();
@@ -192,19 +197,25 @@ function openGrading(index) {
     // Strip boilerplate for full view display
     let cleanAnswer = sub.q3_answer || 'No answer provided';
 
-    cleanAnswer = cleanAnswer.replace(/\\documentclass(\[[^\]]*\])?\s*\{[^}]+\}/g, '');
-    cleanAnswer = cleanAnswer.replace(/\\usepackage(\[[^\]]*\])?\s*\{[^}]+\}/g, '');
-    cleanAnswer = cleanAnswer.replace(/\\title\{[^}]*\}/g, '');
-    cleanAnswer = cleanAnswer.replace(/\\author\{[^}]*\}/g, '');
-    cleanAnswer = cleanAnswer.replace(/\\date\{[^}]*\}/g, '');
-    cleanAnswer = cleanAnswer.replace(/\\maketitle/g, '');
-
+    // 1. Try to extract the document body first (most reliable)
     const docMatchOpen = cleanAnswer.match(/\\begin\s*\{document\}([\s\S]*?)\\end\s*\{document\}/);
     if (docMatchOpen) {
         cleanAnswer = docMatchOpen[1];
     } else {
-        cleanAnswer = cleanAnswer.replace(/\\begin\s*\{document\}/g, '');
-        cleanAnswer = cleanAnswer.replace(/\\end\s*\{document\}/g, '');
+        // 2. Fallback: Line-by-line cleaner
+        let lines = cleanAnswer.split('\n');
+        lines = lines.filter(line => {
+            const l = line.trim();
+            return !(l.startsWith('\\documentclass') ||
+                l.startsWith('\\usepackage') ||
+                l.startsWith('\\title') ||
+                l.startsWith('\\author') ||
+                l.startsWith('\\date') ||
+                l.startsWith('\\maketitle') ||
+                l.includes('\\begin{document}') ||
+                l.includes('\\end{document}'));
+        });
+        cleanAnswer = lines.join('\n');
     }
 
     cleanAnswer = cleanAnswer.trim();
@@ -266,23 +277,25 @@ function updatePreview() {
         if (!input || !preview) return;
 
         let content = input.value;
-        content = content.replace(/\\documentclass(\[[^\]]*\])?\s*\{[^}]+\}/g, '');
-        content = content.replace(/\\usepackage(\[[^\]]*\])?\s*\{[^}]+\}/g, '');
-
-        // Strip metadata
-        content = content.replace(/\\title\{[^}]*\}/g, '');
-        content = content.replace(/\\author\{[^}]*\}/g, '');
-        content = content.replace(/\\date\{[^}]*\}/g, '');
-        content = content.replace(/\\maketitle/g, '');
-
-        // Try to extract document body
+        // 1. Try to extract the document body first (most reliable)
         const docMatch = content.match(/\\begin\s*\{document\}([\s\S]*?)\\end\s*\{document\}/);
         if (docMatch) {
             content = docMatch[1];
         } else {
-            // Fallback: just remove the tags if they exist individually
-            content = content.replace(/\\begin\s*\{document\}/g, '');
-            content = content.replace(/\\end\s*\{document\}/g, '');
+            // 2. Fallback: Line-by-line cleaner
+            let lines = content.split('\n');
+            lines = lines.filter(line => {
+                const l = line.trim();
+                return !(l.startsWith('\\documentclass') ||
+                    l.startsWith('\\usepackage') ||
+                    l.startsWith('\\title') ||
+                    l.startsWith('\\author') ||
+                    l.startsWith('\\date') ||
+                    l.startsWith('\\maketitle') ||
+                    l.includes('\\begin{document}') ||
+                    l.includes('\\end{document}'));
+            });
+            content = lines.join('\n');
         }
 
         content = content.trim();
