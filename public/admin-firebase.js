@@ -697,3 +697,72 @@ function handleImageUpload(slot) {
     };
     reader.readAsDataURL(fileInput.files[0]);
 }
+
+// Rubric Editor Logic
+function renderRubricEditor(rubricData) {
+    const container = document.getElementById('rubricEditorContainer');
+    if (!container) return;
+
+    // Ensure rubricData is an array
+    if (!Array.isArray(rubricData)) rubricData = [];
+
+    let html = '<div class="rubric-editor">';
+    html += '<div id="rubricItems">';
+
+    if (rubricData.length === 0) {
+        // Add one empty row by default if empty
+        rubricData.push({ criteria: '', points: '' });
+    }
+
+    rubricData.forEach((item, index) => {
+        html += createRubricRow(index, item.criteria, item.points);
+    });
+
+    html += '</div>';
+    html += '<button class="btn-secondary" style="margin-top:10px;font-size:14px;" onclick="addRubricRow()">+ Add Criteria</button>';
+    html += '</div>';
+
+    container.innerHTML = html;
+}
+
+function createRubricRow(index, criteria, points) {
+    return `
+        <div class="rubric-row" style="display:flex;gap:10px;margin-bottom:10px;align-items:center;">
+            <input type="text" class="rubric-criteria" placeholder="Criteria description (e.g. 'Correct proof logic')" value="${escapeHtml(criteria || '')}" style="flex:3;">
+            <input type="number" class="rubric-points" placeholder="Pts" value="${points || ''}" style="width:70px;">
+            <button class="btn-secondary" style="padding:5px 10px;color:#dc3545;border-color:#dc3545;" onclick="removeRubricRow(this)">X</button>
+        </div>
+    `;
+}
+
+function addRubricRow() {
+    const container = document.getElementById('rubricItems');
+    if (container) {
+        const div = document.createElement('div');
+        div.innerHTML = createRubricRow(Date.now(), '', ''); // Use timestamp as temp index
+        container.appendChild(div.firstElementChild);
+    }
+}
+
+function removeRubricRow(btn) {
+    btn.parentElement.remove();
+}
+
+function collectRubricData() {
+    const rows = document.querySelectorAll('.rubric-row');
+    const rubric = [];
+    rows.forEach(row => {
+        const criteria = row.querySelector('.rubric-criteria').value.trim();
+        const points = row.querySelector('.rubric-points').value.trim();
+        if (criteria || points) {
+            rubric.push({ criteria, points });
+        }
+    });
+    return rubric;
+}
+
+// Expose functions globally for inline onclick handlers
+window.addRubricRow = addRubricRow;
+window.removeRubricRow = removeRubricRow;
+window.renderRubricEditor = renderRubricEditor;
+window.collectRubricData = collectRubricData;
