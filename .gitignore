@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+
+# Environment variables (local)
+.env.local
+.env
+
+# Vercel
+.vercel
+
+# IDE
+.idea/
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

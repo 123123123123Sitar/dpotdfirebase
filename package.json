@@ -1,0 +1,17 @@
+{
+    "name": "dpotd-enhanced",
+    "version": "2.0.0",
+    "description": "D.PotD Enhanced Admin Portal with AI Grading, Multi-Grader System, and Email Notifications",
+    "scripts": {
+        "dev": "vercel dev",
+        "build": "echo 'Static build - no compile needed'",
+        "start": "vercel dev"
+    },
+    "dependencies": {
+        "firebase-admin": "^11.11.0",
+        "nodemailer": "^6.10.1"
+    },
+    "engines": {
+        "node": ">=18.0.0"
+    }
+}

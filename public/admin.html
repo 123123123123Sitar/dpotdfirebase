@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D.PotD Admin Portal</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']], processEscapes: true },
+            options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre'] }
+        };
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.min.js"></script>
+</head>
+
+<body>
+    <div id="loginScreen">
+        <div class="login-box">
+            <h1>Admin Login</h1>
+            <p>Enter credentials to access the admin portal</p>
+            <div id="loginError" class="login-error"></div>
+            <div class="login-form-group">
+                <label for="emailInput">Email</label>
+                <input type="email" id="emailInput" placeholder="Enter admin email">
+            </div>
+            <div class="login-form-group">
+                <label for="passwordInput">Password</label>
+                <input type="password" id="passwordInput" onkeypress="handlePasswordKeyPress(event)"
+                    placeholder="Enter password">
+            </div>
+            <button class="login-btn" onclick="checkPassword()">Login</button>
+        </div>
+    </div>
+
+    <div id="adminPanel">
+        <div class="container">
+            <h1 style="margin-bottom: 30px;">D.PotD Admin Portal</h1>
+
+            <div id="gradingStatsDisplay"></div>
+
+            <div class="tabs">
+                <button class="tab active" data-tab="questions" onclick="switchTab('questions')">Questions</button>
+                <button class="tab" data-tab="schedule" onclick="switchTab('schedule')">Schedule</button>
+                <button class="tab" data-tab="settings" onclick="switchTab('settings')">Settings</button>
+                <button class="tab" data-tab="users" onclick="switchTab('users')">Users</button>
+                <button class="tab" data-tab="graders" onclick="switchTab('graders')">Graders</button>
+                <button class="tab" data-tab="submissions" onclick="switchTab('submissions')">Submissions</button>
+                <button class="tab" data-tab="leaderboard" onclick="switchTab('leaderboard')">Leaderboard</button>
+            </div>
+
+            <!-- Questions Tab -->
+            <div id="questions" class="tab-content active">
+                <div class="form-group">
+                    <label>Select Day:</label>
+                    <select id="questionDay" onchange="loadQuestions()">
+                        <option value="1">Day 1</option>
+                        <option value="2">Day 2</option>
+                        <option value="3">Day 3</option>
+                        <option value="4">Day 4</option>
+                        <option value="5">Day 5</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Instructions:</label>
+                    <textarea id="instructions" rows="3" placeholder="Instructions for this day"></textarea>
+                </div>
+                <div class="question-group">
+                    <h3>Question 1 (Auto-Graded) - 4 Points</h3>
+                    <div class="form-group"><label>Question Text:</label><textarea id="q1Text" rows="3"></textarea>
+                    </div>
+                    <div class="image-upload-section">
+                        <label>Image (Optional):</label>
+                        <input type="file" id="q1Image" accept="image/*" onchange="handleImageUpload(1)">
+                        <div id="q1ImagePreview" class="image-preview"></div>
+                        <input type="hidden" id="q1ImageData">
+                    </div>
+                    <div class="form-group"><label>Answer:</label><input type="text" id="q1Answer"
+                            placeholder="Numeric answer"></div>
+                </div>
+                <div class="question-group">
+                    <h3>Question 2 (Auto-Graded) - 6 Points</h3>
+                    <div class="form-group"><label>Question Text:</label><textarea id="q2Text" rows="3"></textarea>
+                    </div>
+                    <div class="image-upload-section">
+                        <label>Image (Optional):</label>
+                        <input type="file" id="q2Image" accept="image/*" onchange="handleImageUpload(2)">
+                        <div id="q2ImagePreview" class="image-preview"></div>
+                        <input type="hidden" id="q2ImageData">
+                    </div>
+                    <div class="form-group"><label>Answer:</label><input type="text" id="q2Answer"
+                            placeholder="Numeric answer"></div>
+                </div>
+                <div class="question-group">
+                    <h3>Question 3 (Proof) - 10 Points</h3>
+                    <div class="form-group"><label>Question Text:</label><textarea id="q3Text" rows="3"></textarea>
+                    </div>
+                    <div class="image-upload-section">
+                        <label>Image (Optional):</label>
+                        <input type="file" id="q3Image" accept="image/*" onchange="handleImageUpload(3)">
+                        <div id="q3ImagePreview" class="image-preview"></div>
+                        <input type="hidden" id="q3ImageData">
+                    </div>
+                    <div class="form-group"><label>Sample Answer:</label><textarea id="q3Answer" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Rubric (for AI grading):</label>
+                        <div id="rubricEditorContainer"
+                            style="border:1px solid #e9ecef;padding:12px;border-radius:6px;background:#fff;">
+                            <p style="color:#666;">Rubric editor will load here</p>
+                        </div>
+                    </div>
+                </div>
+                <button class="btn" onclick="saveQuestions()">Save Questions</button>
+                <div id="questionStatus" class="status"></div>
+            </div>
+
+            <!-- Schedule Tab -->
+            <div id="schedule" class="tab-content">
+                <p style="color:#666;margin-bottom:20px;">Set when each day's test becomes available.</p>
+                <div class="form-group"><label>Day 1 Opens:</label><input type="datetime-local" id="day1"></div>
+                <div class="form-group"><label>Day 2 Opens:</label><input type="datetime-local" id="day2"></div>
+                <div class="form-group"><label>Day 3 Opens:</label><input type="datetime-local" id="day3"></div>
+                <div class="form-group"><label>Day 4 Opens:</label><input type="datetime-local" id="day4"></div>
+                <div class="form-group"><label>Day 5 Opens:</label><input type="datetime-local" id="day5"></div>
+                <button class="btn" onclick="saveSchedule()">Save Schedule</button>
+                <div id="scheduleStatus" class="status"></div>
+            </div>
+
+            <!-- Settings Tab -->
+            <div id="settings" class="tab-content">
+                <h3 style="margin-bottom:20px;">Test Settings</h3>
+                <div class="form-group"><label>Test Duration (minutes):</label><input type="number" id="testDuration"
+                        value="120"></div>
+                <div class="form-group"><label>Admin Name:</label><input type="text" id="adminName"></div>
+                <div class="form-group"><label>Admin Email:</label><input type="email" id="adminEmail"></div>
+                <button class="btn" onclick="saveSettings()">Save Settings</button>
+                <div id="settingsStatus" class="status"></div>
+            </div>
+
+            <!-- Users Tab -->
+            <div id="users" class="tab-content">
+                <h2 style="margin-bottom:20px;">User Management</h2>
+                <div class="question-group">
+                    <h3>Add New User (Student)</h3>
+                    <div class="form-group"><label>Full Name:</label><input type="text" id="newUserName"
+                            placeholder="John Doe"></div>
+                    <div class="form-group"><label>Email:</label><input type="email" id="newUserEmail"
+                            placeholder="student@example.com"></div>
+                    <button class="btn" onclick="addUser()">Add User</button>
+                </div>
+                <h3 style="margin-bottom:20px;">Registered Users</h3>
+                <button class="btn-secondary" onclick="loadUsers()">Refresh</button>
+                <div id="usersContainer" style="margin-top:20px;"></div>
+                <div id="usersStatus" class="status"></div>
+            </div>
+
+            <!-- Graders Tab -->
+            <div id="graders" class="tab-content">
+                <h2 style="margin-bottom:20px;">Grader Management</h2>
+                <div class="question-group">
+                    <h3>Add New Grader</h3>
+                    <div class="form-group"><label>Full Name:</label><input type="text" id="newGraderName"
+                            placeholder="Grader Name"></div>
+                    <div class="form-group"><label>Email:</label><input type="email" id="newGraderEmail"
+                            placeholder="grader@example.com"></div>
+                    <button class="btn btn-success" onclick="addGrader()">Add Grader</button>
+                </div>
+                <div class="btn-group">
+                    <button class="btn-secondary" onclick="loadGraders()">Refresh Graders</button>
+                    <button class="btn" onclick="autoAssignSubmissions()">Auto-Assign Pending Submissions</button>
+                </div>
+                <div id="gradersContainer" style="margin-top:20px;"></div>
+                <div id="gradersStatus" class="status"></div>
+            </div>
+
+            <!-- Submissions Tab -->
+            <div id="submissions" class="tab-content">
+                <div class="btn-group">
+                    <button class="btn" onclick="loadSubmissions()">Refresh</button>
+                    <button class="btn btn-secondary" onclick="bulkAIGrade()">Bulk AI Grade</button>
+                    <button class="btn btn-success" onclick="sendBulkNotifications()">Send All Notifications</button>
+                    <button class="btn" onclick="exportToCSV()" style="background:#17a2b8;">Export CSV</button>
+                </div>
+                <div class="filters-section">
+                    <div class="filter-group">
+                        <label>Filter by Day:</label>
+                        <select id="filterDay" onchange="filterSubmissions()">
+                            <option value="all">All Days</option>
+                            <option value="1">Day 1</option>
+                            <option value="2">Day 2</option>
+                            <option value="3">Day 3</option>
+                            <option value="4">Day 4</option>
+                            <option value="5">Day 5</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Filter by Student:</label>
+                        <select id="filterStudent" onchange="filterSubmissions()">
+                            <option value="all">All Students</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="navigation-controls" id="navControls">
+                    <div class="nav-buttons"><button class="nav-btn" id="prevBtn"
+                            onclick="navigateSubmission(-1)">Previous</button></div>
+                    <div class="student-selector" style="flex:1;max-width:400px;margin:0 20px;"><select
+                            id="submissionSelector" onchange="selectSubmission()"></select></div>
+                    <div class="nav-buttons"><button class="nav-btn" id="nextBtn"
+                            onclick="navigateSubmission(1)">Next</button></div>
+                </div>
+                <div id="submissionsContainer"></div>
+                <div id="submissionsStatus" class="status"></div>
+            </div>
+
+            <!-- Leaderboard Tab -->
+            <div id="leaderboard" class="tab-content">
+                <div class="btn-group"><button class="btn" onclick="loadLeaderboard()">Refresh Leaderboard</button>
+                </div>
+                <div id="leaderboardContainer" style="min-height:200px;">
+                    <p style="color:#666;">No data loaded.</p>
+                </div>
+                <div id="leaderboardStatus" class="status"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="firebase-config.js"></script>
+    <script src="admin-firebase.js"></script>
+</body>
+
+</html>

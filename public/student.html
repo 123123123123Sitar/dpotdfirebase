@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D.PotD - Daily Problem of the Day</title>
+    <meta name="description" content="D.PotD - Daily Problem of the Day mathematics competition platform">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']], processEscapes: true },
+            options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre'] }
+        };
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.min.js"></script>
+    <style>
+        #loginScreen {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .login-box h1 {
+            color: #667eea;
+            font-size: 36px;
+        }
+
+        .login-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .login-btn:hover {
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .day-selector {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .day-btn {
+            padding: 20px;
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .day-btn:hover {
+            border-color: #667eea;
+        }
+
+        .day-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .day-btn.completed {
+            background: #d4edda;
+            border-color: #EA5A2F;
+        }
+
+        .day-btn.locked {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .day-btn h3 {
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+
+        .day-btn p {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        .question-card {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            border-left: 4px solid #667eea;
+        }
+
+        .question-card h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .question-card img {
+            max-width: 100%;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+
+        .answer-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            margin-top: 15px;
+        }
+
+        .answer-input:focus {
+            border-color: #667eea;
+        }
+
+        textarea.answer-input {
+            min-height: 200px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .history-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .score-badge {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+
+        .score-badge.good {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .score-badge.average {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .score-badge.poor {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .rank-1 {
+            background: linear-gradient(135deg, #ffd700 0%, #ffb347 100%) !important;
+            color: #333 !important;
+        }
+
+        .rank-2 {
+            background: linear-gradient(135deg, #c0c0c0 0%, #a8a8a8 100%) !important;
+        }
+
+        .rank-3 {
+            background: linear-gradient(135deg, #cd7f32 0%, #a0522d 100%) !important;
+            color: white !important;
+        }
+
+        @media (max-width: 768px) {
+            .day-selector {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="loginScreen">
+        <div class="login-box">
+            <h1>D.PotD</h1>
+            <p class="tagline" style="color:#666;margin-bottom:30px;text-align:center;font-size:14px;">Daily Problem of
+                the Day</p>
+            <div id="loginError" class="login-error"></div>
+            <div class="login-form-group">
+                <label for="emailInput">Email</label>
+                <input type="email" id="emailInput" placeholder="student@example.com">
+            </div>
+            <div class="login-form-group">
+                <label for="passwordInput">Password</label>
+                <input type="password" id="passwordInput" onkeypress="if(event.key==='Enter')login()"
+                    placeholder="Password">
+            </div>
+            <button class="login-btn" onclick="login()">Login</button>
+        </div>
+    </div>
+
+    <div id="studentPanel" style="display:none;background:#f5f5f5;min-height:100vh;">
+        <div class="header">
+            <div class="header-content">
+                <h1>D.PotD</h1>
+                <div style="display:flex;align-items:center;gap:15px;">
+                    <span id="userName">Student</span>
+                    <button class="logout-btn" onclick="logout()">Logout</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="timerDisplay" class="timer hidden">00:00</div>
+
+        <div class="container">
+            <div class="tabs" style="border-bottom:none;gap:15px;">
+                <button class="tab active" onclick="switchTab('tests')"
+                    style="background:white;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.1);">Tests</button>
+                <button class="tab" onclick="switchTab('history')"
+                    style="background:white;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.1);">History</button>
+                <button class="tab" onclick="switchTab('leaderboard')"
+                    style="background:white;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.1);">Leaderboard</button>
+            </div>
+
+            <!-- Tests Tab -->
+            <div id="tests" class="tab-content active" style="background:transparent;box-shadow:none;padding:0;">
+                <div class="card">
+                    <h2>Select a Day</h2>
+                    <div id="daySelector" class="day-selector"></div>
+                </div>
+                <div id="testContainer" class="card hidden">
+                    <div id="instructions"
+                        style="margin-bottom:20px;padding:15px;background:#e8f4fd;border-radius:8px;color:#0c5460;">
+                    </div>
+                    <div id="questionsContainer"></div>
+                    <div style="margin-top:30px;text-align:center;">
+                        <button class="btn" id="submitBtn" onclick="submitTest()">Submit Test</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- History Tab -->
+            <div id="history" class="tab-content" style="background:transparent;box-shadow:none;padding:0;">
+                <div class="card">
+                    <h2>Your Submission History</h2>
+                    <div id="historyContainer">
+                        <p style="color:#666;">Loading your history...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Leaderboard Tab -->
+            <div id="leaderboard" class="tab-content" style="background:transparent;box-shadow:none;padding:0;">
+                <div class="card">
+                    <h2>Leaderboard</h2>
+                    <div id="leaderboardContainer">
+                        <p style="color:#666;">Loading leaderboard...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="firebase-config.js"></script>
+    <script src="student-firebase.js"></script>
+</body>
+
+</html>
