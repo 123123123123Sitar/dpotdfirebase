@@ -110,8 +110,16 @@ appAuth.onAuthStateChanged(async (user) => {
         currentUser = null;
         localStorage.removeItem('dpotdUser');
         const mainPortal = document.getElementById('mainPortal');
-        if (mainPortal) mainPortal.style.display = 'none';
-        else pendingMainRender = true;
+        const authScreen = document.getElementById('authScreen');
+        if (mainPortal) {
+            mainPortal.style.display = 'none';
+            mainPortal.classList.add('hidden');
+        }
+        if (authScreen) {
+            authScreen.style.display = 'block';
+            authScreen.classList.remove('hidden');
+        }
+        if (!mainPortal) pendingMainRender = true;
         return;
     }
 
