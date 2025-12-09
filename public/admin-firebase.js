@@ -468,7 +468,7 @@ async function saveSettings() {
     } catch (e) { showStatus('settingsStatus', 'Error: ' + e.message, 'error'); }
 }
 
-// Users
+// Users (Students only - filter out admins and graders)
 async function loadUsers() {
     if (!isAuthenticated) return;
     const container = document.getElementById('usersContainer');
@@ -476,9 +476,13 @@ async function loadUsers() {
     container.innerHTML = '<p style="color:#666;">Loading users...</p>';
     try {
         const snap = await firestore.collection('users').get();
-        if (snap.empty) { container.innerHTML = '<p>No users found.</p>'; return; }
+        const students = snap.docs.filter(doc => {
+            const data = doc.data();
+            return !data.isAdmin && !data.isGrader;
+        });
+        if (students.length === 0) { container.innerHTML = '<p>No students found.</p>'; return; }
         container.innerHTML = '';
-        snap.forEach(function (doc) {
+        students.forEach(function (doc) {
             const user = doc.data();
             const card = document.createElement('div');
             card.className = 'submission-card';
