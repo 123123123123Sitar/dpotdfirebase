@@ -47,7 +47,7 @@
                 <button class="tab active" data-tab="questions" onclick="switchTab('questions')">Questions</button>
                 <button class="tab" data-tab="schedule" onclick="switchTab('schedule')">Schedule</button>
                 <button class="tab" data-tab="settings" onclick="switchTab('settings')">Settings</button>
-                <button class="tab" data-tab="users" onclick="switchTab('users')">Users</button>
+                <button class="tab" data-tab="users" onclick="switchTab('users')">Students</button>
                 <button class="tab" data-tab="graders" onclick="switchTab('graders')">Graders</button>
                 <button class="tab" data-tab="submissions" onclick="switchTab('submissions')">Submissions</button>
                 <button class="tab" data-tab="leaderboard" onclick="switchTab('leaderboard')">Leaderboard</button>
@@ -144,16 +144,16 @@
 
             <!-- Users Tab -->
             <div id="users" class="tab-content">
-                <h2 style="margin-bottom:20px;">User Management</h2>
+                <h2 style="margin-bottom:20px;">Student Management</h2>
                 <div class="question-group">
-                    <h3>Add New User (Student)</h3>
+                    <h3>Add New Student</h3>
                     <div class="form-group"><label>Full Name:</label><input type="text" id="newUserName"
                             placeholder="John Doe"></div>
                     <div class="form-group"><label>Email:</label><input type="email" id="newUserEmail"
                             placeholder="student@example.com"></div>
-                    <button class="btn" onclick="addUser()">Add User</button>
+                    <button class="btn" onclick="addUser()">Add Student</button>
                 </div>
-                <h3 style="margin-bottom:20px;">Registered Users</h3>
+                <h3 style="margin-bottom:20px;">Registered Students</h3>
                 <button class="btn-secondary" onclick="loadUsers()">Refresh</button>
                 <div id="usersContainer" style="margin-top:20px;"></div>
                 <div id="usersStatus" class="status"></div>

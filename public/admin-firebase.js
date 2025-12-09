@@ -136,7 +136,7 @@ async function aiGradeSubmission(submissionId) {
         const result = await response.json();
         if (!result.success) throw new Error(result.error);
         await firestore.collection('submissions').doc(submissionId).update({
-            aiScore: result.score, aiFeedback: result.feedback, aiConfidence: result.confidence,
+            aiScore: result.score, q3Score: result.score, aiFeedback: result.feedback, q3Feedback: result.feedback, aiConfidence: result.confidence,
             gradingStatus: 'ai_graded', aiGradedAt: firebase.firestore.FieldValue.serverTimestamp()
         });
         const scoreEl = document.getElementById('score_' + submissionId);

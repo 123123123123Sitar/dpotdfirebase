@@ -860,6 +860,30 @@ function updateTimer() {
     }
 }
 
+// ------------------ LaTeX Toolbar ------------------
+function insertLatex(text) {
+    const textarea = document.getElementById('latexInput');
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const before = textarea.value.substring(0, start);
+    const after = textarea.value.substring(end);
+
+    textarea.value = before + text + after;
+
+    // Position cursor inside braces if present
+    const bracePos = text.indexOf('{}');
+    if (bracePos !== -1) {
+        textarea.selectionStart = textarea.selectionEnd = start + bracePos + 1;
+    } else {
+        textarea.selectionStart = textarea.selectionEnd = start + text.length;
+    }
+
+    textarea.focus();
+    updateLatexPreview();
+}
+
 // ------------------ LaTeX helper / AI ------------------
 function updateLatexPreview() {
     if (latexUpdateTimer) clearTimeout(latexUpdateTimer);
