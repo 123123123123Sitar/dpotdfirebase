@@ -2,9 +2,6 @@
 const appAuth = firebase.auth();
 const firestore = firebase.firestore();
 
-// API Keys (Gemini helper reused)
-// API Keys (Gemini helper reused)
-
 const LATEX_BOILERPLATE = `\\documentclass{article}
 \\usepackage{amsmath}
 

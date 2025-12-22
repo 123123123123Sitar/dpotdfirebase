@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="timer.css">
+    <title>DTMT Test Timer</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script> 
+</head>
+
+<body>
+    <div class="container" id="mainContainer">
+        <div class="header">
+            <h1>Design Tech Math Tournament</h1>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="timer">Timer</button>
+            <button class="tab-btn" data-tab="editor">Clarifications</button>
+        </div>
+
+        <div class="tab-content active" id="timer">
+            <div class="timer-section">
+                <div class="test-selector">
+                    <label for="testType">Select Test:</label>
+                    <select id="testType">
+                        <option value="">-- Select a test --</option>
+                        <option value="45">Subject Round - Algebra (45 min)</option>
+                        <option value="45">Subject Round - Geometry (45 min)</option>
+                        <option value="45">Subject Round - Discrete (45 min)</option>
+                        <option value="45">Subject Round - 6th Grade (45 min)</option>
+                        <option value="25">Team Round (25 min)</option>
+                    </select>
+                </div>
+
+                <div class="timer-display">
+                    <div class="round-name" id="roundName"></div>
+                    <div class="time" id="timerDisplay">00:00</div>
+                    <div class="label">Time Remaining</div>
+                </div>
+
+                <div class="controls">
+                    <button class="btn btn-start" id="startBtn">Start</button>
+                    <button class="btn btn-pause" id="pauseBtn" disabled>Pause</button>
+                    <button class="btn btn-reset" id="resetBtn">Reset</button>
+                    <button class="btn btn-fullscreen" id="fullscreenBtn">Fullscreen</button>
+                </div>
+            </div>
+
+            <div class="clarifications-board">
+                <h2>Clarifications</h2>
+                <div id="clarificationsList">
+                    <div class="no-clarifications">No clarifications posted yet.</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="editor">
+            <div class="editor-section">
+                <h2>Post Clarification</h2>
+                <form id="clarificationForm">
+                    <div class="form-group">
+                        <label for="clarTest">Test:</label>
+                        <select id="clarTest" required>
+                            <option value="">-- Select a test --</option>
+                            <option value="Subject Round - Algebra">Subject Round - Algebra</option>
+                            <option value="Subject Round - Geometry">Subject Round - Geometry</option>
+                            <option value="Subject Round - Discrete">Subject Round - Discrete</option>
+                            <option value="Subject Round - 6th Grade">Subject Round - 6th Grade</option>
+                            <option value="Team Round">Team Round</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="clarQuestion">Question:</label>
+                        <input type="text" id="clarQuestion" placeholder="e.g., Question #5" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="clarText">Clarification:</label>
+                        <textarea id="clarText" placeholder="Enter clarification details..." required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-submit">Post Clarification</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="timer.js"></script>
+</body>
+
+</html>

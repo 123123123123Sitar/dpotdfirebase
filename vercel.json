@@ -1,8 +1,9 @@
 {
   "version": 2,
   "routes": [
-    { "src": "/admin", "dest": "/admin.html" },
-    { "src": "/grader", "dest": "/grader.html" },
-    { "src": "/", "dest": "/student.html" }
+    { "src": "/kevinlusyzygy/admin/?", "dest": "/admin.html" },
+    { "src": "/kevinlusyzygy/grader/?", "dest": "/grader.html" },
+    { "src": "/kevinlusyzygy/dtmt/?", "dest": "/timer.html" },
+    { "src": "^/((?!kevinlusyzygy).*)", "dest": "/student.html" }
   ]
 }
