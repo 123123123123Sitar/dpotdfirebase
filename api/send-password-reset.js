@@ -40,13 +40,13 @@ module.exports = async function handler(req, res) {
         const { email } = req.body;
 
         if (!email) {
-            console.error('[Password Reset] Error: Email is missing from request body');
+            // ...existing code...
             return res.status(400).json({ error: 'Email is required' });
         }
 
         // Check Gmail Config
         if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
-            console.error('[Password Reset] Error: Gmail credentials missing in env vars');
+            // ...existing code...
             return res.status(500).json({ error: 'Server configuration error: Missing SMTP credentials' });
         }
 
@@ -129,7 +129,7 @@ module.exports = async function handler(req, res) {
         return res.status(200).json({ success: true, message: 'Password reset email sent' });
 
     } catch (error) {
-        console.error('[Password Reset] CRITICAL ERROR:', error);
+        // ...existing code...
 
         // Return detailed error if possible for debugging (remove in prod if needed, but useful now)
         return res.status(500).json({

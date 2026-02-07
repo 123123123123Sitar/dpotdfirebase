@@ -130,7 +130,7 @@ async function callGeminiAPI(prompt, apiKey) {
  * Parse Gemini's JSON response with fallback handling
  */
 function parseGradingResponse(text) {
-    console.log('Raw Gemini response:', text);
+    // ...existing code...
 
     let jsonStr = text || '';
 
@@ -172,7 +172,7 @@ function parseGradingResponse(text) {
             rubricBreakdown: parsed.rubricBreakdown || {}
         };
     } catch (e) {
-        console.log('JSON parse failed, attempting regex extraction. Error:', e.message);
+        // ...existing code...
 
         // Fallback: try to extract score and feedback from text
         const scoreMatch = text.match(/["']?score["']?\s*[:=]\s*(\d+)/i);
@@ -261,7 +261,7 @@ export default async function handler(req, res) {
         });
 
     } catch (error) {
-        console.error('Grade submission error:', error);
+        // ...existing code...
         return res.status(500).json({
             success: false,
             error: error.message || 'Failed to grade submission'

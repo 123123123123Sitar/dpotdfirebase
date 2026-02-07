@@ -30,7 +30,7 @@ async function getUserDoc(uid) {
         if (!snap.exists) return null;
         return snap.data();
     } catch (err) {
-        console.error("Error getting user document:", err);
+        // ...existing code...
         return null;
     }
 }

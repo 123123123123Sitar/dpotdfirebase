@@ -239,7 +239,7 @@ module.exports = async function handler(req, res) {
                         totalStudents = leaderboard.length;
                     }
                 } catch (e) {
-                    console.warn('Rank calculation failed:', e);
+                    // ...existing code...
                 }
 
                 subject = `D.PotD Day ${day} Graded - Rank #${rank}`;
@@ -358,7 +358,7 @@ module.exports = async function handler(req, res) {
         });
 
     } catch (error) {
-        console.error('Send notification error:', error);
+        // ...existing code...
         return res.status(500).json({
             success: false,
             error: error.message || 'Failed to send notification'

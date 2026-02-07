@@ -37,7 +37,7 @@ async function loadClarificationsFromFirestore() {
         });
         displayClarifications();
     } catch (error) {
-        console.error('Error loading clarifications:', error);
+        // ...existing code...
     }
 }
 
@@ -216,7 +216,7 @@ clarificationForm.addEventListener('submit', async (e) => {
         clarificationForm.reset();
         document.querySelector('[data-tab="timer"]').click();
     } catch (error) {
-        console.error('Error adding clarification:', error);
+        // ...existing code...
         alert('Failed to save clarification. Please try again.');
     }
 });

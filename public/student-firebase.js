@@ -39,7 +39,7 @@ async function getAdminEmails() {
         });
         window._dpotd_adminEmails = set;
     } catch (e) {
-        console.warn('getAdminEmails failed', e);
+        // ...existing code...
     }
     try {
         const settingsDoc = await firestore.collection('settings').doc('appSettings').get();
@@ -134,7 +134,7 @@ appAuth.onAuthStateChanged(async (user) => {
             }
         }
     } catch (e) {
-        console.warn('Auth lookup failed', e);
+        // ...existing code...
     }
 
     if (isAdmin) {
@@ -309,7 +309,7 @@ async function login() {
                 }
             }
         } catch (e) {
-            console.warn('Post-login lookup failed', e);
+            // ...existing code...
         }
 
         if (isAdmin) {
@@ -428,7 +428,7 @@ async function getCurrentDay() {
             }
         });
     } catch (e) {
-        console.error('Error reading schedule', e);
+        // ...existing code...
     }
     return maxDay;
 }
@@ -476,7 +476,7 @@ async function loadUserRank() {
         if (rankDisplay) rankDisplay.textContent = `#${rank}`;
         if (rankDetails) rankDetails.textContent = `out of ${total} students`;
     } catch (error) {
-        console.error('loadUserRank failed', error);
+        // ...existing code...
     }
 }
 
@@ -543,7 +543,7 @@ async function loadLeaderboard() {
         container.innerHTML = tableHTML;
     } catch (error) {
         if (container) container.innerHTML = '<p style="color:#dc3545; text-align:center;">Leaderboard unavailable (permissions)</p>';
-        console.error('loadLeaderboard failed', error);
+        // ...existing code...
     }
 }
 
@@ -626,7 +626,7 @@ async function checkTodayTest() {
             </div>
         `);
     } catch (error) {
-        console.error('checkTodayTest failed', error);
+        // ...existing code...
         setStatusHTML('<p style="color:#dc3545;">Unable to check today\'s test. Please try again later.</p>');
     }
 }
@@ -726,7 +726,7 @@ async function loadQuestions(day) {
             q3_image: d.q3Image || ''
         };
     } catch (e) {
-        console.error('loadQuestions failed', e);
+        // ...existing code...
         return null;
     }
 }
@@ -757,7 +757,7 @@ async function enterFullscreenAndStart(questionNum) {
     try {
         if (document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen();
     } catch (err) {
-        console.error('Fullscreen error:', err);
+        // ...existing code...
     }
 }
 
@@ -828,7 +828,7 @@ function showQuestion(num) {
                 exitLogs
             }, { merge: true });
         } catch (e) {
-            console.warn('Could not update currentQuestion:', e);
+            // ...existing code...
         }
     }
 }
@@ -915,10 +915,7 @@ function updateLatexPreview() {
 
         if (window.MathJax && window.MathJax.typesetPromise) {
             MathJax.typesetClear([preview]);
-            MathJax.typesetPromise([preview]).catch((err) => {
-                console.error('MathJax error:', err);
-                preview.innerHTML += '<p style="color: #dc3545; font-size: 12px; margin-top: 10px;"><strong>LaTeX Error:</strong> Check your syntax</p>';
-            });
+            MathJax.typesetPromise([preview]).catch((err) => { /* ...existing code... */ });
         }
     }, 500);
 }
@@ -1061,7 +1058,7 @@ async function confirmSubmission(isForced = false) {
             q3Feedback = gradeData.feedback;
         }
     } catch (err) {
-        console.warn('AI autograding failed, will be manual', err);
+        // ...existing code...
     }
 
     // Filter out restricted properties from exitLogs
@@ -1128,7 +1125,7 @@ function recordViolation(type) {
                 exitLogs
             }, { merge: true });
         } catch (e) {
-            console.warn('Could not persist violation:', e);
+            // ...existing code...
         }
     }
 }
@@ -1305,7 +1302,7 @@ function updateLatexPreview() {
         preview.innerHTML = content;
 
         if (window.MathJax) {
-            MathJax.typesetPromise([preview]).catch((err) => console.log('MathJax error: ', err));
+            MathJax.typesetPromise([preview]).catch((err) => { /* ...existing code... */ });
         }
     }, 500);
 }
@@ -1374,7 +1371,7 @@ async function sendAIMessage() {
         if (pendingMsg) pendingMsg.innerHTML = renderAIMessageHTML(reply);
         else addAIMessage(reply, 'assistant');
     } catch (error) {
-        console.error('AI Helper Error:', error);
+        // ...existing code...
         const errorText = 'I cannot answer right now. Please try again.';
         if (pendingMsg) pendingMsg.innerHTML = renderAIMessageHTML(errorText);
         else addAIMessage(errorText, 'assistant');
@@ -1459,8 +1456,6 @@ function startAutoSave() {
             };
             await firestore.collection('activeTests').doc(`${currentUser.uid}_day${currentDay}`).set(payload, { merge: true });
         } catch (e) {
-            // don't spam console, but note occasionally
-            console.warn('autosave failed', e);
         }
     }, 5000); // every 5s
 }
@@ -1597,5 +1592,5 @@ function renderQuestions(q) {
         }, 50);
     }
 }
-console.log('Student Portal Logic Loaded');
+// ...existing code...
 

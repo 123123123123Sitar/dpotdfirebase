@@ -19,11 +19,11 @@ appAuth.onAuthStateChanged(async function (user) {
 
     // Check if user is a grader
     try {
-        console.log('Checking grader status for user:', user.uid, user.email);
+        // ...existing code...
         const userDoc = await firestore.collection('users').doc(user.uid).get();
 
         if (!userDoc.exists) {
-            console.error('User document does not exist for:', user.uid);
+            // ...existing code...
             document.getElementById('loginError').textContent = 'User profile not found';
             document.getElementById('loginError').style.display = 'block';
             await appAuth.signOut();
@@ -31,11 +31,11 @@ appAuth.onAuthStateChanged(async function (user) {
         }
 
         const userData = userDoc.data();
-        console.log('User data:', userData);
+        // ...existing code...
 
         // Check if grader OR admin (admins can also use grader portal)
         if (!userData.isGrader && !userData.isAdmin) {
-            console.error('User is not a grader:', userData);
+            // ...existing code...
             document.getElementById('loginError').textContent = 'Not authorized as grader';
             document.getElementById('loginError').style.display = 'block';
             await appAuth.signOut();
@@ -54,7 +54,7 @@ appAuth.onAuthStateChanged(async function (user) {
         loadQueue();
         loadStats();
     } catch (e) {
-        console.error('Auth error:', e);
+        // ...existing code...
         document.getElementById('loginError').textContent = 'Error checking credentials: ' + e.message;
         document.getElementById('loginError').style.display = 'block';
     }
@@ -119,7 +119,7 @@ async function loadQueue() {
 
         renderQueue();
     } catch (e) {
-        console.error('Load queue failed:', e);
+        // ...existing code...
         container.innerHTML = '<p style="color:#dc3545;text-align:center;">Error loading queue</p>';
     }
 }
@@ -399,7 +399,7 @@ async function loadStats() {
         });
         document.getElementById('todayCount').textContent = todayCount;
     } catch (e) {
-        console.error('Load stats failed:', e);
+        // ...existing code...
     }
 }
 

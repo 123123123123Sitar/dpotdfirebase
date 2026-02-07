@@ -89,7 +89,7 @@ export default async function handler(req, res) {
         }
 
     } catch (error) {
-        console.error('Assign graders error:', error);
+        // ...existing code...
         return res.status(500).json({
             success: false,
             error: error.message || 'Failed to process grader assignment'

@@ -23,7 +23,7 @@ async function getAdminEmails() {
         const snap = await firestore.collection('users').where('isAdmin', '==', true).get();
         snap.forEach(doc => { const e = doc.data().email; if (e) set.add(e.toLowerCase()); });
         window._dpotd_adminEmails = set;
-    } catch (e) { console.warn('getAdminEmails failed', e); }
+    } catch (e) { /* ...existing code... */ }
     return set;
 }
 
@@ -234,12 +234,12 @@ async function addGrader() {
             const result = await response.json();
             if (result.success) {
                 emailSent = true;
-                console.log('Grader welcome email sent:', result.messageId);
+                // ...existing code...
             } else {
-                console.error('Grader email API error:', result.error);
+                // ...existing code...
             }
         } catch (emailErr) {
-            console.error('Grader email failed:', emailErr);
+            // ...existing code...
         }
 
         alert('Grader created!' + (emailSent ? ' Welcome email sent.' : ' (Custom email failed - check console)'));
@@ -663,7 +663,7 @@ function displayCurrentSubmission() {
         const fbPreview = document.getElementById('feedback_preview_' + id);
         if (fbPreview) toTypeset.push(fbPreview);
 
-        MathJax.typesetPromise(toTypeset).catch(function (err) { console.log('MathJax error', err); });
+        MathJax.typesetPromise(toTypeset).catch(function (err) { /* ...existing code... */ });
     } else if (sub.q3_feedback) {
         // Fallback for just preview update if MathJax not fully ready/structured
         setTimeout(function () { updateLatexPreview(id); }, 100);

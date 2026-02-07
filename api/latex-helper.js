@@ -28,7 +28,7 @@ export default async function handler(req, res) {
 
         const apiKey = process.env.GEMINI_API_KEY;
         if (!apiKey) {
-            console.error('GEMINI_API_KEY not found in env');
+            // ...existing code...
             return res.status(500).json({ error: 'Server configuration error: Missing API key' });
         }
 
@@ -78,7 +78,7 @@ Only explain LaTeX syntax. Be concise and helpful.`;
                 const text = data.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('').trim();
 
                 if (text) {
-                    console.log(`LaTeX helper success with ${cfg.model}`);
+                    // ...existing code...
                     return res.status(200).json({ reply: text });
                 }
 
@@ -90,14 +90,14 @@ Only explain LaTeX syntax. Be concise and helpful.`;
         }
 
         // All models failed
-        console.error('All Gemini models failed for LaTeX helper:', errors.join('; '));
+        // ...existing code...
         return res.status(500).json({
             error: 'AI service temporarily unavailable. Please try again.',
             details: errors.slice(0, 3).join('; ')
         });
 
     } catch (error) {
-        console.error('LaTeX helper API error:', error);
+        // ...existing code...
         return res.status(500).json({ error: error.message || 'Internal server error' });
     }
 }
