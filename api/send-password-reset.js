@@ -38,7 +38,6 @@ module.exports = async function handler(req, res) {
 
     try {
         const { email } = req.body;
-        console.log(`[Password Reset] Request received for: ${email}`);
 
         if (!email) {
             console.error('[Password Reset] Error: Email is missing from request body');
@@ -51,9 +50,6 @@ module.exports = async function handler(req, res) {
             return res.status(500).json({ error: 'Server configuration error: Missing SMTP credentials' });
         }
 
-        // Generate password reset link using Firebase Admin SDK
-        console.log('[Password Reset] Generating link via Firebase Admin SDK...');
-
         // Determine return URL from request or default
         // const returnUrl = req.headers.origin || 'https://dpotd-app.firebaseapp.com';
 
@@ -64,10 +60,8 @@ module.exports = async function handler(req, res) {
         };
 
         const link = await admin.auth().generatePasswordResetLink(email, actionCodeSettings);
-        console.log('[Password Reset] Link generated successfully:', link);
 
         // Send custom email via Nodemailer
-        console.log(`[Password Reset] Creating transport for ${process.env.GMAIL_USER}...`);
         const transporter = createTransporter();
 
         const html = `
@@ -81,14 +75,14 @@ module.exports = async function handler(req, res) {
     <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
         <tr>
             <td style="background-color: #EA5A2F; padding: 30px; text-align: center;">
-                <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700;">D.PotD Password Reset</h1>
+                <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700;">D.PotD Portal Password Reset</h1>
             </td>
         </tr>
         <tr>
             <td style="padding: 40px 30px;">
                 <h2 style="color: #333; margin: 0 0 20px 0; font-size: 24px;">Reset Your Password</h2>
                 <p style="color: #666; font-size: 16px; line-height: 1.6; margin: 0 0 25px 0;">
-                    We received a request to reset the password for your D.PotD account. Click the button below to set a new password.
+                    We received a request to reset the password for your D.PotD Portal account. Click the button below to set a new password.
                 </p>
                 
                 <table width="100%" cellpadding="0" cellspacing="0">
@@ -113,7 +107,7 @@ module.exports = async function handler(req, res) {
         <tr>
             <td style="background-color: #f8f9fa; padding: 25px 30px; text-align: center; border-top: 1px solid #e9ecef;">
                 <p style="color: #999; font-size: 12px; margin: 0;">
-                    D.PotD Support Team
+                    Design Tech Math Club
                 </p>
             </td>
         </tr>
@@ -123,16 +117,14 @@ module.exports = async function handler(req, res) {
         `;
 
         const mailOptions = {
-            from: `D.PotD Support <${process.env.GMAIL_USER}>`,
+            from: `D.PotD Portal <${process.env.GMAIL_USER}>`,
             to: email,
-            subject: 'D.PotD - Reset Your Password',
+            subject: 'D.PotD Portal: Reset Your Password',
             html: html,
             text: `Reset your D.PotD password by visiting: ${link}`
         };
 
-        console.log(`[Password Reset] Attempting to send email to ${email}...`);
         const info = await transporter.sendMail(mailOptions);
-        console.log('[Password Reset] Email sent successfully. MessageID:', info.messageId);
 
         return res.status(200).json({ success: true, message: 'Password reset email sent' });
 
