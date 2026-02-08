@@ -57,19 +57,20 @@ function buildGradingPrompt(questionText, studentAnswer, rubric) {
     }
 
     // Build the grading prompt
-    const prompt = `You are a formal, concise math grader for 10th grade students. Grade the following submission holistically.
+    const prompt = `You are a strict, formal, concise math grader for 10th grade students. Grade the following submission holistically.
 
 ## QUESTION
-${questionText || 'Mathematical proof/explanation question'}
+${questionText}'}
 
 ## RUBRIC (Total: 10 points)
-${rubricText || 'Award points based on: correctness (4pts), clarity (3pts), completeness (3pts)'}
+${rubricText }
 
 ## STUDENT SUBMISSION
 ${studentAnswer}
 
 ## INSTRUCTIONS
 - Be formal but supportive
+- Enforce mathematical rigor and clarity
 - Keep feedback concise (2-3 sentences max)
 - Award partial credit where appropriate
 - Focus on mathematical correctness and logical flow

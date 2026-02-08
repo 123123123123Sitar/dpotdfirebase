@@ -265,9 +265,9 @@ async function requestPasswordReset() {
         } else {
             throw new Error(result.error || 'Failed to send reset email');
         }
-    } catch (error) {
+    } catch (_) {
         hideLoading();
-        showStatus('resetStatus', 'Error: ' + error.message, 'error');
+        showStatus('resetStatus', 'An email was not found with this account.', 'error');
     }
 }
 
@@ -322,9 +322,9 @@ async function login() {
         localStorage.setItem('dpotdUser', JSON.stringify(currentUser));
         hideLoading();
         showMainPortal();
-    } catch (error) {
+    } catch (_) {
         hideLoading();
-        showStatus('loginStatus', 'Account credentials incorrect. Please try again.', 'error');
+        showStatus('loginStatus', 'Unable to sign in. Please check your credentials and try again.', 'error');
     }
 }
 
@@ -394,8 +394,8 @@ async function changePassword() {
         document.getElementById('currentPassword').value = '';
         document.getElementById('newPassword').value = '';
         document.getElementById('confirmNewPassword').value = '';
-    } catch (error) {
-        showStatus('profileStatus', error.message, 'error');
+    } catch (_) {
+        showStatus('profileStatus', 'Unable to update password. Please try again later.', 'error');
     }
 }
 
@@ -542,7 +542,7 @@ async function loadLeaderboard() {
         tableHTML += '</tbody></table>';
         container.innerHTML = tableHTML;
     } catch (error) {
-        if (container) container.innerHTML = '<p style="color:#dc3545; text-align:center;">Leaderboard unavailable (permissions)</p>';
+        if (container) container.innerHTML = '<p style="color:#dc3545; text-align:center;">Leaderboard unavailable. Please try again later.</p>';
         // ...existing code...
     }
 }
@@ -990,7 +990,7 @@ async function confirmSubmission(isForced = false) {
         window.location.reload();
     } catch (e) {
         hideLoading();
-        alert('Error submitting test: ' + e.message);
+        alert('Unable to submit your test. Please try again later.');
     }
 }
 
@@ -1099,7 +1099,7 @@ async function confirmSubmission(isForced = false) {
 
     } catch (error) {
         hideLoading();
-        alert('Error submitting test: ' + error.message + '\n\nPlease contact your administrator.');
+        alert('Unable to submit your test. Please try again later.');
         testActive = true;
         // Re-enter fullscreen to continue test
         try {
@@ -1236,7 +1236,7 @@ async function loadHistory() {
             container.appendChild(card);
         });
     } catch (error) {
-        if (container) container.innerHTML = '<p style="color: #dc3545;">Error loading history</p>';
+        if (container) container.innerHTML = '<p style="color: #dc3545;">Unable to load history. Please try again later.</p>';
     }
 }
 
