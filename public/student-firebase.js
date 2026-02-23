@@ -502,7 +502,7 @@ async function loadLeaderboard() {
         const leaderboardArray = Object.values(scores).sort((a, b) => {
             if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore;
             return 0;
-        }).slice(0, 10);
+        }).slice(0, 5);
 
         if (!container) return;
         if (leaderboardArray.length === 0) {
