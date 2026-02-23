@@ -55,7 +55,7 @@ module.exports = async function handler(req, res) {
 
         // Force the firebaseapp domain for now to ensure standard handler
         const actionCodeSettings = {
-            url: 'https://dpotd-app.firebaseapp.com/student.html',
+            url: 'https://dpotd.dtechmathclub.org/',
             handleCodeInApp: false
         };
 

@@ -2,7 +2,7 @@
 
 // Your Firebase config
 const firebaseConfig = {
-    apiKey: process.env.FIREBASE_API_KEY,
+    apiKey: "AIzaSyDKUKsa5G321pwX8JCkAnpvYcig33ripEo",
     authDomain: "dpotd-app.firebaseapp.com",
     projectId: "dpotd-app",
     storageBucket: "dpotd-app.appspot.com",
