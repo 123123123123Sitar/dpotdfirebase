@@ -182,18 +182,6 @@ function parseGradingResponse(text) {
         const score = scoreMatch ? Math.min(10, parseInt(scoreMatch[1], 10)) : 5;
         let feedback = feedbackMatch ? feedbackMatch[1] : '';
 
-        // If no feedback found, try to extract any sensible text
-        if (!feedback) {
-            // Look for feedback-like content
-            const lines = text.split('\n').filter(line =>
-                line.trim().length > 20 &&
-                !line.includes('{') &&
-                !line.includes('}') &&
-                !line.toLowerCase().includes('json')
-            );
-            feedback = lines.length > 0 ? lines[0].trim() : 'Review submitted work for accuracy and completeness.';
-        }
-
         return {
             score,
             feedback,
