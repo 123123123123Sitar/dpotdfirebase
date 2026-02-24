@@ -51,7 +51,7 @@ function generateFeedbackEmail(studentName, day, score, totalPossible) {
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>D.PotD - Your Feedback is Ready</title>
+    <title>D.PotD: ${day} Problem 3 Feedback Ready</title>
 </head>
 <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
     <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
@@ -85,28 +85,14 @@ function generateFeedbackEmail(studentName, day, score, totalPossible) {
                 <p style="color: #666; font-size: 16px; line-height: 1.6; margin: 0 0 30px 0;">
                     Log in to the student portal to view your detailed feedback and see how you can improve.
                 </p>
-                
-                <!-- Tips Section -->
-                <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #fff3cd; border-radius: 8px; border-left: 4px solid #ffc107;">
-                    <tr>
-                        <td style="padding: 20px;">
-                            <p style="color: #856404; margin: 0; font-size: 14px;">
-                                <strong>Pro Tip:</strong> Review the rubric breakdown in your feedback to understand exactly where you earned points and where you can improve!
-                            </p>
-                        </td>
-                    </tr>
-                </table>
             </td>
         </tr>
         
         <!-- Footer -->
         <tr>
             <td style="background-color: #f8f9fa; padding: 25px 30px; text-align: center; border-top: 1px solid #e9ecef;">
-                <p style="color: #999; font-size: 12px; margin: 0;">
-                    This email was sent by D.PotD. If you have questions, please contact your instructor.
-                </p>
                 <p style="color: #ccc; font-size: 11px; margin: 10px 0 0 0;">
-                    © ${new Date().getFullYear()} D.PotD - Daily Problem of the Day
+                    Design Tech Problems of the Day Challenge
                 </p>
             </td>
         </tr>
