@@ -1534,9 +1534,8 @@ function formatRichText(raw) {
     html = html.replace(/---/g, '—');
     html = html.replace(/--/g, '–');
 
-    // Remove any remaining unknown commands that might cause issues
-    html = html.replace(/\\[a-zA-Z]+\{[^}]*\}/g, ''); // Remove unknown \command{...}
-    html = html.replace(/\\[a-zA-Z]+/g, ''); // Remove unknown \command
+    // Do not strip unknown LaTeX commands here.
+    // MathJax needs math commands like \frac and \sqrt to remain intact.
 
     // Paragraphs
     html = html.replace(/\n{2,}/g, '<br><br>');
@@ -1593,4 +1592,3 @@ function renderQuestions(q) {
     }
 }
 // ...existing code...
-
