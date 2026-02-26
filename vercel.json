@@ -4,6 +4,7 @@
     { "src": "/admin", "dest": "/admin.html" },
     { "src": "/grader", "dest": "/grader.html" },
     { "src": "/", "dest": "/student.html" },
-    { "src": "/dtmt", "dest": "/timer.html" }
+    { "src": "/dtmt", "dest": "/timer.html" },
+    { "src": "/dtmt/jeopardy", "dest": "/jeopardy.html" }
   ]
 }
