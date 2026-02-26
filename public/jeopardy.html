@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DTMT Activities: Jeopardy</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #EA5A2F;
+            --primary-dark: #d84a20;
+            --bg-dark: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            --bg-light: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+            --text-dark: #333;
+            --text-light: #fff;
+            --card-dark: #003366;
+            --card-light: #ffffff;
+            --border-dark: #EA5A2F;
+            --border-light: #ddd;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-dark);
+            padding: 20px;
+            min-height: 100vh;
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+
+        body.light-mode {
+            --bg-dark: linear-gradient(135deg, #e0e0e0 0%, #c9c9c9 100%);
+            --text-dark: #222;
+            --card-dark: #f0f0f0;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding-bottom: 200px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            margin-top: 30px;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 48px;
+            color: #EA5A2F;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
+            letter-spacing: 2px;
+        }
+
+        .theme-toggle {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background-color: var(--primary-color);
+            border: none;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .theme-toggle:hover {
+            background-color: var(--primary-dark);
+            transform: scale(1.05);
+        }
+
+        .score-display {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, rgba(26, 26, 46, 0.95), rgba(26, 26, 46, 0.85));
+            padding: 20px;
+            z-index: 1100;
+            border-top: 2px solid #EA5A2F;
+        }
+
+        body.light-mode .score-display {
+            background: linear-gradient(to top, rgba(200, 200, 210, 0.97), rgba(210, 210, 220, 0.92));
+        }
+
+        .score-item {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid #EA5A2F;
+            border-radius: 8px;
+            padding: 15px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .score-item.rank-up {
+            animation: rankUp 0.6s ease;
+        }
+
+        @keyframes rankUp {
+            0% { transform: scale(1); box-shadow: none; }
+            30% { transform: scale(1.12); box-shadow: 0 0 25px rgba(234, 90, 47, 0.7); border-color: #ffc107; }
+            60% { transform: scale(1.05); }
+            100% { transform: scale(1); box-shadow: none; }
+        }
+
+        .score-item:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(234, 90, 47, 0.3);
+        }
+
+        .score-item.active {
+            background-color: #EA5A2F;
+            border-color: #fff;
+        }
+
+        .score-item.active label,
+        .score-item.active .score {
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+
+        .score-item label {
+            display: block;
+            color: #ccc;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .score-item .score {
+            font-size: 32px;
+            font-weight: bold;
+            color: #EA5A2F;
+            margin-bottom: 12px;
+        }
+
+        .score-buttons {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .score-btn {
+            background-color: #EA5A2F;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-width: 35px;
+        }
+
+        .score-btn:hover {
+            background-color: #d84a20;
+            transform: scale(1.1);
+        }
+
+        .score-btn.minus {
+            background-color: #dc3545;
+        }
+
+        .score-btn.minus:hover {
+            background-color: #c82333;
+        }
+
+        .score-item .team-name {
+            background: transparent;
+            border: 1px dashed transparent;
+            color: #ccc;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-align: center;
+            width: 100%;
+            padding: 2px 5px;
+            margin-bottom: 8px;
+            cursor: text;
+            outline: none;
+            font-family: inherit;
+            font-weight: bold;
+        }
+
+        .score-item .team-name:hover,
+        .score-item .team-name:focus {
+            border-color: #EA5A2F;
+            border-radius: 3px;
+        }
+
+        .score-item.active .team-name {
+            color: white;
+        }
+
+        body.light-mode .score-item .team-name {
+            color: #333;
+        }
+
+        .remove-team-btn {
+            position: absolute;
+            top: 4px;
+            right: 6px;
+            background: none;
+            border: none;
+            color: #999;
+            font-size: 14px;
+            cursor: pointer;
+            padding: 2px 5px;
+            line-height: 1;
+            transition: color 0.2s;
+        }
+
+        .remove-team-btn:hover {
+            color: #dc3545;
+        }
+
+        .add-team-btn {
+            background: rgba(234, 90, 47, 0.2);
+            border: 2px dashed #EA5A2F;
+            border-radius: 8px;
+            padding: 15px 20px;
+            color: #EA5A2F;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 60px;
+        }
+
+        .add-team-btn:hover {
+            background: rgba(234, 90, 47, 0.4);
+            transform: scale(1.05);
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        .category {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .category-header {
+            background-color: #EA5A2F;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 18px;
+            border-radius: 4px 4px 0 0;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+
+        .questions {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .question-btn {
+            background-color: #003366;
+            color: white;
+            border: 2px solid #EA5A2F;
+            padding: 30px 20px;
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            flex: 1;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .question-btn:hover:not(:disabled) {
+            background-color: #004d99;
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(234, 90, 47, 0.5);
+        }
+
+        .question-btn:disabled {
+            background-color: #666;
+            border-color: #999;
+            color: #999;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        body.light-mode .question-btn {
+            background-color: #d0d0d8;
+            color: #222;
+            border-color: #EA5A2F;
+        }
+
+        body.light-mode .question-btn:hover:not(:disabled) {
+            background-color: #b8b8c0;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: var(--card-dark);
+            padding: 40px;
+            border-radius: 8px;
+            max-width: 700px;
+            width: 90%;
+            box-shadow: 0 5px 30px rgba(0,0,0,0.5);
+            animation: slideUp 0.3s ease;
+            color: var(--text-dark);
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 3px solid #EA5A2F;
+            padding-bottom: 15px;
+        }
+
+        .modal-header h2 {
+            color: #EA5A2F;
+            font-size: 32px;
+            margin-bottom: 0;
+        }
+
+        .modal-header .points {
+            display: none;
+        }
+
+        .question-text {
+            display: none;
+            font-size: 30px;
+            color: var(--text-dark);
+            line-height: 1.8;
+            margin-bottom: 30px;
+            text-align: center;
+            min-height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 500;
+        }
+
+        .question-text.show {
+            display: flex;
+        }
+
+        body:not(.light-mode) .question-text {
+            color: #ffffff;
+        }
+
+        .answer-text {
+            display: none;
+            font-size: 26px;
+            color: #EA5A2F;
+            font-weight: bold;
+            line-height: 1.8;
+            margin-bottom: 30px;
+            text-align: center;
+            min-height: 120px;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(234, 90, 47, 0.1);
+            padding: 25px;
+            border-radius: 4px;
+            border: 3px solid #EA5A2F;
+        }
+
+        .answer-text.show {
+            display: flex;
+        }
+
+        .status-text {
+            display: none;
+            font-size: 18px;
+            color: #EA5A2F;
+            text-align: center;
+            margin: 15px 0;
+            font-weight: bold;
+        }
+
+        .status-text.show {
+            display: block;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 14px 20px;
+            font-size: 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            min-width: 120px;
+        }
+
+        .btn-show-answer {
+            background-color: #ffc107;
+            color: #333;
+        }
+
+        .btn-show-answer:hover {
+            background-color: #ffb300;
+            transform: scale(1.05);
+        }
+
+        .btn-correct {
+            background-color: #28a745;
+            color: white;
+            flex: 1;
+            min-width: 140px;
+        }
+
+        .btn-correct:hover {
+            background-color: #218838;
+            transform: scale(1.05);
+        }
+
+        .btn-incorrect {
+            background-color: #dc3545;
+            color: white;
+            padding: 14px 25px;
+            flex: 1;
+        }
+
+        .btn-incorrect:hover {
+            background-color: #c82333;
+            transform: scale(1.05);
+        }
+
+        .btn-close {
+            background-color: #6c757d;
+            color: white;
+        }
+
+        .btn-close:hover {
+            background-color: #5a6268;
+            transform: scale(1.05);
+        }
+
+        .controls {
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .btn-reset {
+            background-color: #EA5A2F;
+            color: white;
+            padding: 12px 30px;
+            font-size: 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .btn-reset:hover {
+            background-color: #d84a20;
+            transform: scale(1.05);
+        }
+
+        .final-score {
+            text-align: center;
+            color: white;
+            font-size: 28px;
+            margin-top: 20px;
+            font-weight: bold;
+            color: #EA5A2F;
+        }
+
+        @media (max-width: 1024px) {
+            .board {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .board {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .header h1 {
+                font-size: 32px;
+            }
+
+            .question-btn {
+                font-size: 18px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .board {
+                grid-template-columns: 1fr;
+            }
+
+            .score-display {
+                gap: 15px;
+            }
+
+            .score-item {
+                padding: 10px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <button class="theme-toggle" onclick="toggleTheme()">🌙 Dark Mode</button>
+            <h1>DTMT Activities: Jeopardy </h1>
+        </div>
+
+        <div class="board" id="board"></div>
+
+        <div class="controls">
+            <button class="btn-reset" onclick="resetGame()">Reset Game</button>
+            <div class="final-score" id="finalScore"></div>
+        </div>
+    </div>
+
+    <!-- Score Display - Fixed at Bottom -->
+    <div class="score-display" id="scoreDisplay"></div>
+
+    <!-- Question Modal -->
+    <div class="modal" id="questionModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="categoryName"></h2>
+                <div class="points" id="pointsDisplay"></div>
+            </div>
+            <div class="question-text" id="questionText"></div>
+            <div class="answer-text" id="answerText"></div>
+            <div class="status-text" id="statusText"></div>
+            <div class="modal-buttons" id="modalButtons"></div>
+        </div>
+    </div>
+
+    <!-- Audio -->
+    <audio id="correctSound" src="correct.mp3" preload="auto"></audio>
+    <audio id="wrongSound" src="wrong.mp3" preload="auto"></audio>
+
+    <script>
+        // Theme management
+        function toggleTheme() {
+            const body = document.body;
+            const btn = document.querySelector('.theme-toggle');
+            body.classList.toggle('light-mode');
+            
+            if (body.classList.contains('light-mode')) {
+                btn.textContent = '🌙 Dark Mode';
+                localStorage.setItem('jeopardyTheme', 'light');
+            } else {
+                btn.textContent = '☀️ Light Mode';
+                localStorage.setItem('jeopardyTheme', 'dark');
+            }
+        }
+
+        function initializeTheme() {
+            const savedTheme = localStorage.getItem('jeopardyTheme') || 'dark';
+            const body = document.body;
+            const btn = document.querySelector('.theme-toggle');
+            
+            if (savedTheme === 'light') {
+                body.classList.add('light-mode');
+                btn.textContent = '☀️ Light Mode';
+            } else {
+                body.classList.remove('light-mode');
+                btn.textContent = '🌙 Dark Mode';
+            }
+        }
+
+        // Jeopardy data - CUSTOMIZE HERE
+        const jeopardyData = {
+            categories: [
+                {
+                    name: "Algebra",
+                    questions: [
+                        { points: 100, question: "What is the solution to x + 5 = 12?", answer: "x = 7" },
+                        { points: 200, question: "Factor: x² + 5x + 6", answer: "(x + 2)(x + 3)" },
+                        { points: 300, question: "Solve: 2x² - 8 = 0", answer: "x = ±2" },
+                        { points: 400, question: "What is the slope of the line 3x - 2y = 6?", answer: "3/2" },
+                        { points: 500, question: "Solve for x: log₂(x) = 5", answer: "x = 32" }
+                    ]
+                },
+                {
+                    name: "Geometry",
+                    questions: [
+                        { points: 100, question: "What is the area of a circle with radius 5?", answer: "25π or ≈ 78.54" },
+                        { points: 200, question: "Find the hypotenuse of a right triangle with legs 3 and 4.", answer: "5" },
+                        { points: 300, question: "What is the sum of interior angles in a hexagon?", answer: "720°" },
+                        { points: 400, question: "If two triangles are congruent, which postulate applies?", answer: "SSS, SAS, ASA, AAS, or HL" },
+                        { points: 500, question: "Find the volume of a sphere with radius 3.", answer: "36π or ≈ 113.10" }
+                    ]
+                },
+                {
+                    name: "Trigonometry",
+                    questions: [
+                        { points: 100, question: "What is sin(90°)?", answer: "1" },
+                        { points: 200, question: "What is cos(0°)?", answer: "1" },
+                        { points: 300, question: "In a right triangle, sin(θ) = opposite/hypotenuse. What is cos(θ)?", answer: "adjacent/hypotenuse" },
+                        { points: 400, question: "What is tan(45°)?", answer: "1" },
+                        { points: 500, question: "Solve: sin(x) = 0.5 for x in [0, 2π]", answer: "π/6 and 5π/6" }
+                    ]
+                },
+                {
+                    name: "Calculus",
+                    questions: [
+                        { points: 100, question: "What is the derivative of x²?", answer: "2x" },
+                        { points: 200, question: "What is the integral of x³?", answer: "x⁴/4 + C" },
+                        { points: 300, question: "Find the derivative of sin(x).", answer: "cos(x)" },
+                        { points: 400, question: "What is the limit of (x² - 1)/(x - 1) as x approaches 1?", answer: "2" },
+                        { points: 500, question: "Find the critical points of f(x) = x³ - 3x.", answer: "x = ±1" }
+                    ]
+                },
+                {
+                    name: "Probability & Stats",
+                    questions: [
+                        { points: 100, question: "What is the probability of rolling a 6 on a standard die?", answer: "1/6" },
+                        { points: 200, question: "If a coin is flipped 3 times, how many possible outcomes?", answer: "8" },
+                        { points: 300, question: "What is the mean of 2, 4, 6, 8, 10?", answer: "6" },
+                        { points: 400, question: "In a standard deck, what is the probability of drawing a red card?", answer: "1/2 or 26/52" },
+                        { points: 500, question: "What is the standard deviation formula?", answer: "√(Σ(x - μ)²/n)" }
+                    ]
+                }
+            ]
+        };
+
+        // Game state
+        let teams = [
+            { name: 'Team 1', score: 0 },
+            { name: 'Team 2', score: 0 },
+            { name: 'Team 3', score: 0 }
+        ];
+        let previousRankOrder = [];
+        let selectedTeam = null;
+        let answeredQuestions = new Set();
+        let currentQuestion = null;
+        let answerRevealed = false;
+        let activePoints = 100;
+
+        // Initialize the game
+        function initializeGame() {
+            renderBoard();
+            renderScoreDisplay();
+        }
+
+        function renderScoreDisplay() {
+            const container = document.getElementById('scoreDisplay');
+            container.innerHTML = '';
+
+            // Sort by score descending for display order
+            const sorted = teams.map((team, idx) => ({ team, idx })).sort((a, b) => b.team.score - a.team.score);
+            const newRankOrder = sorted.map(s => s.idx);
+
+            // Determine which teams moved up in rank
+            const movedUp = new Set();
+            if (previousRankOrder.length > 0) {
+                newRankOrder.forEach((teamIdx, newPos) => {
+                    const oldPos = previousRankOrder.indexOf(teamIdx);
+                    if (oldPos !== -1 && newPos < oldPos) {
+                        movedUp.add(teamIdx);
+                    }
+                });
+            }
+            previousRankOrder = newRankOrder;
+
+            sorted.forEach(({ team, idx }) => {
+                const item = document.createElement('div');
+                item.className = 'score-item' + (selectedTeam === idx ? ' active' : '') + (movedUp.has(idx) ? ' rank-up' : '');
+                item.id = `scoreItem${idx}`;
+                item.onclick = () => selectTeam(idx);
+
+                // Remove animation class after it finishes so it can re-trigger
+                if (movedUp.has(idx)) {
+                    item.addEventListener('animationend', () => item.classList.remove('rank-up'), { once: true });
+                }
+
+                item.innerHTML = `
+                    ${teams.length > 1 ? `<button class="remove-team-btn" onclick="removeTeam(${idx}); event.stopPropagation();">✕</button>` : ''}
+                    <input class="team-name" value="${team.name}" 
+                        onclick="event.stopPropagation()" 
+                        onchange="renameTeam(${idx}, this.value)" 
+                        onkeydown="if(event.key==='Enter') this.blur()">
+                    <div class="score" id="score${idx}">${team.score}</div>
+                    <div class="score-buttons">
+                        <button class="score-btn minus" onclick="addScore(${idx}, -${activePoints}); event.stopPropagation();">−${activePoints}</button>
+                        <button class="score-btn" onclick="addScore(${idx}, ${activePoints}); event.stopPropagation();">+${activePoints}</button>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+
+            const addBtn = document.createElement('button');
+            addBtn.className = 'add-team-btn';
+            addBtn.textContent = '+';
+            addBtn.title = 'Add Team';
+            addBtn.onclick = addTeam;
+            container.appendChild(addBtn);
+        }
+
+        function addTeam() {
+            teams.push({ name: `Team ${teams.length + 1}`, score: 0 });
+            renderScoreDisplay();
+        }
+
+        function removeTeam(idx) {
+            if (teams.length <= 1) return;
+            teams.splice(idx, 1);
+            if (selectedTeam === idx) selectedTeam = null;
+            else if (selectedTeam > idx) selectedTeam--;
+            renderScoreDisplay();
+        }
+
+        function renameTeam(idx, newName) {
+            teams[idx].name = newName.trim() || `Team ${idx + 1}`;
+        }
+
+        function renderBoard() {
+            const boardDiv = document.getElementById('board');
+            boardDiv.innerHTML = '';
+
+            jeopardyData.categories.forEach((category, catIdx) => {
+                const categoryDiv = document.createElement('div');
+                categoryDiv.className = 'category';
+
+                const headerDiv = document.createElement('div');
+                headerDiv.className = 'category-header';
+                headerDiv.textContent = category.name;
+                categoryDiv.appendChild(headerDiv);
+
+                const questionsDiv = document.createElement('div');
+                questionsDiv.className = 'questions';
+
+                category.questions.forEach((q, qIdx) => {
+                    const btnId = `q-${catIdx}-${qIdx}`;
+                    const btn = document.createElement('button');
+                    btn.className = 'question-btn';
+                    btn.id = btnId;
+                    btn.textContent = `${q.points}`;
+                    btn.onclick = () => showQuestion(catIdx, qIdx, btnId);
+
+                    if (answeredQuestions.has(btnId)) {
+                        btn.disabled = true;
+                    }
+
+                    questionsDiv.appendChild(btn);
+                });
+
+                categoryDiv.appendChild(questionsDiv);
+                boardDiv.appendChild(categoryDiv);
+            });
+        }
+
+        function showQuestion(catIdx, qIdx, btnId) {
+            answerRevealed = false;
+            currentQuestion = { catIdx, qIdx, btnId };
+
+            const category = jeopardyData.categories[catIdx];
+            const question = category.questions[qIdx];
+
+            activePoints = question.points;
+            renderScoreDisplay();
+            document.getElementById('categoryName').textContent = `${category.name} ${question.points}`;
+            document.getElementById('pointsDisplay').textContent = '';
+            document.getElementById('questionText').textContent = question.question;
+            document.getElementById('questionText').classList.add('show');
+            document.getElementById('answerText').textContent = question.answer;
+            document.getElementById('answerText').classList.remove('show');
+
+            updateModalButtons();
+            document.getElementById('questionModal').classList.add('show');
+        }
+
+        function updateModalButtons() {
+            const buttonsDiv = document.getElementById('modalButtons');
+            const statusDiv = document.getElementById('statusText');
+            buttonsDiv.innerHTML = '';
+            
+            if (!answerRevealed) {
+                const showBtn = document.createElement('button');
+                showBtn.className = 'btn btn-show-answer';
+                showBtn.textContent = 'Show Answer';
+                showBtn.onclick = revealAnswer;
+                buttonsDiv.appendChild(showBtn);
+            }
+
+            if (answerRevealed) {
+                statusDiv.textContent = 'Select the team that answered correctly:';
+                statusDiv.classList.add('show');
+            } else {
+                statusDiv.classList.remove('show');
+            }
+
+            const closeBtn = document.createElement('button');
+            closeBtn.className = 'btn btn-close';
+            closeBtn.textContent = 'Close';
+            closeBtn.onclick = closeModal;
+            buttonsDiv.appendChild(closeBtn);
+        }
+
+        function revealAnswer() {
+            answerRevealed = true;
+            document.getElementById('answerText').classList.add('show');
+            updateModalButtons();
+        }
+
+        function answerQuestion(teamIdx, isCorrect) {
+            const points = jeopardyData.categories[currentQuestion.catIdx].questions[currentQuestion.qIdx].points;
+
+            if (isCorrect) {
+                teams[teamIdx].score += points;
+                document.getElementById('correctSound').currentTime = 0;
+                document.getElementById('correctSound').play().catch(() => {});
+            } else {
+                document.getElementById('wrongSound').currentTime = 0;
+                document.getElementById('wrongSound').play().catch(() => {});
+            }
+
+            answeredQuestions.add(currentQuestion.btnId);
+            document.getElementById(currentQuestion.btnId).disabled = true;
+
+            renderScoreDisplay();
+            checkGameOver();
+            closeModal();
+        }
+
+        function selectTeam(teamIdx) {
+            selectedTeam = teamIdx;
+            renderScoreDisplay();
+        }
+
+        function addScore(teamIdx, points) {
+            teams[teamIdx].score += points;
+            if (points > 0) {
+                document.getElementById('correctSound').currentTime = 0;
+                document.getElementById('correctSound').play().catch(() => {});
+            } else {
+                document.getElementById('wrongSound').currentTime = 0;
+                document.getElementById('wrongSound').play().catch(() => {});
+            }
+            renderScoreDisplay();
+        }
+
+        function closeModal() {
+            document.getElementById('questionModal').classList.remove('show');
+            document.getElementById('questionText').classList.remove('show');
+            document.getElementById('answerText').classList.remove('show');
+            activePoints = 100;
+            renderScoreDisplay();
+        }
+
+        function checkGameOver() {
+            const allAnswered = answeredQuestions.size === jeopardyData.categories.length * 5;
+            if (allAnswered) {
+                let finalMsg = 'Game Over!<br>';
+                const sorted = teams
+                    .map((t, idx) => ({ score: t.score, name: t.name }))
+                    .sort((a, b) => b.score - a.score);
+
+                sorted.forEach((item, idx) => {
+                    finalMsg += `${idx + 1}. ${item.name}: ${item.score}<br>`;
+                });
+
+                document.getElementById('finalScore').innerHTML = finalMsg;
+            }
+        }
+
+        function resetGame() {
+            if (confirm('Reset the game?')) {
+                teams.forEach(t => t.score = 0);
+                answeredQuestions.clear();
+                answerRevealed = false;
+                currentQuestion = null;
+                selectedTeam = null;
+                document.getElementById('finalScore').innerHTML = '';
+                initializeGame();
+            }
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('questionModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        };
+
+        // Initialize on page load
+        window.onload = function() {
+            initializeTheme();
+            initializeGame();
+        };
+    </script>
+</body>
+</html>

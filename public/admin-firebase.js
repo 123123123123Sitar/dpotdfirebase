@@ -285,7 +285,7 @@ async function autoAssignSubmissions() {
 async function sendNotification(submissionId) {
     const sub = cachedSubmissions.find(s => s.id === submissionId);
     if (!sub) return alert('Submission not found');
-    if (!sub.q3_score) return alert('Grade submission first');
+    if (!sub.q3_feedback) return alert('Feedback required before sending notification');
     const q1Points = sub.q1_correct ? 4 : 0;
     const q2Points = sub.q2_correct ? 6 : 0;
     const totalScore = q1Points + q2Points + parseInt(sub.q3_score || 0);
